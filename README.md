@@ -146,6 +146,7 @@ The recipes are made on an iPhone 17 Pro. On other models the buttons sit elsewh
 | `no apple development certificate found` | Do step 3 of the first time setup. |
 | `several developer teams found` | Create the settings file and copy one of the `TEAM_ID=` lines it shows into it. |
 | `the phone stopped accepting taps` | The phone locked. Unlock it, set Auto-Lock to Never and start again. |
+| `lost the connection to the phone` | The cable came loose or the phone locked. Plug it in, unlock it and start again. |
 | `xcodebuild failed, see build.log` | Check that you are signed in to Xcode and that the phone is unlocked. |
 | `webdriveragent did not start` | Unlock the phone, run `deno task rebuild`. |
 | The phone says **Untrusted Developer** | Settings > General > VPN & Device Management, tap your Apple ID and **Trust**. |

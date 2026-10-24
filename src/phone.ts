@@ -12,13 +12,18 @@ const check = <T extends { value?: unknown }>(res: T) => {
   return res;
 };
 
+const lost = (): never => {
+  throw new Error("lost the connection to the phone, check the cable, unlock it and start again");
+};
+
 export const connectPhone = async (base: string) => {
   const post = (path: string, body: unknown) =>
     fetch(`${base}${path}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
-    }).then((r) => r.json()).then(check);
+      signal: AbortSignal.timeout(20000),
+    }).then((r) => r.json(), lost).then(check);
 
   const { sessionId } = await post("/session", { capabilities: { alwaysMatch: {} } });
   await post(`/session/${sessionId}/appium/settings`, {
@@ -27,7 +32,9 @@ export const connectPhone = async (base: string) => {
   const ocr = startOcr();
 
   const screenshot = async () => {
-    const { value } = await fetch(`${base}/screenshot`).then((r) => r.json()).then(check);
+    const { value } = await fetch(`${base}/screenshot`, { signal: AbortSignal.timeout(20000) })
+      .then((r) => r.json(), lost)
+      .then(check);
     return decode(decodeBase64(value));
   };
 

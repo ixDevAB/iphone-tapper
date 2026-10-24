@@ -8,7 +8,6 @@ const healButton = { x: 267, y: 643 };
 const cancelButton = { x: 75, y: 659 };
 const confirmButton = { x: 285, y: 535 };
 const infantryBox = { x: 302, y: 362 };
-const infantryBoxRegion = { x: 810, y: 1030, width: 210, height: 90 };
 const bannerRegion = { x: 0, y: 830, width: 1206, height: 120 };
 
 const ref = (file: string, x: number, y: number) => ({ img: loadImage(new URL(file, import.meta.url)), x, y });
@@ -25,22 +24,11 @@ const shows = (screen: Image, r: { img: Image; x: number; y: number }) => differ
 
 const visibleButton = (screen: Image) => shows(screen, refs.heal) ? "heal" : shows(screen, refs.help) ? "help" : undefined;
 
-const readNumber = async (phone: Phone, screen: Image) => {
-  const r = infantryBoxRegion;
-  const inside = (await phone.ocr(screen)).filter((l) => {
-    const cx = (l.x + l.width / 2) * screen.width;
-    const cy = (l.y + l.height / 2) * screen.height;
-    return cx > r.x && cx < r.x + r.width && cy > r.y && cy < r.y + r.height;
-  });
-  return Number(inside.map((l) => l.text).join("").replace(/\D/g, ""));
-};
-
 const setBatch = async (phone: Phone, troops: number) => {
   await phone.tap(infantryBox);
   await sleep(800);
   await phone.type([..."\b".repeat(6), ...String(troops), "\n"]);
   await sleep(800);
-  return readNumber(phone, await phone.screenshot());
 };
 
 const waitFor = async (phone: Phone, r: { img: Image; x: number; y: number }, until: number): Promise<boolean> => {
@@ -97,6 +85,7 @@ export const kingshotHeal: Recipe = {
       batch: number;
       allies: number;
       batchAllies: number;
+      healedAt: number;
       helpedAt?: number;
       helpAllies?: number;
       idleSince: number;
@@ -127,10 +116,14 @@ export const kingshotHeal: Recipe = {
       const target = s.allies * perAlly;
 
       if (name === "heal" && s.batch !== target) {
-        const read = await setBatch(phone, target);
-        const batch = read || target;
-        console.log(`${time()} batch set to ${batch}${read ? (read === target ? "" : ` (wanted ${target})`) : " (could not read it back)"}`);
-        return step({ ...s, batch, idleSince: Date.now() });
+        await setBatch(phone, target);
+        console.log(`${time()} batch set to ${target}`);
+        return step({ ...s, batch: target, idleSince: Date.now() });
+      }
+
+      if (name === "heal" && Date.now() - s.healedAt < 1500) {
+        await sleep(200);
+        return step(s);
       }
 
       if (name === "heal") {
@@ -138,7 +131,7 @@ export const kingshotHeal: Recipe = {
         const batchAllies = Math.max(1, Math.round(s.batch / perAlly));
         console.log(`${time()} heal ${s.heals + 1} (${s.batch} troops for ${batchAllies} ${batchAllies === 1 ? "ally" : "allies"})`);
         await sleep(settings.intervalMs);
-        return step({ ...s, heals: s.heals + 1, batchAllies, helpedAt: undefined, helpAllies: undefined, idleSince: Date.now() });
+        return step({ ...s, heals: s.heals + 1, healedAt: Date.now(), batchAllies, helpedAt: undefined, helpAllies: undefined, idleSince: Date.now() });
       }
 
       if (name === "help" && !s.helpedAt) {
@@ -156,21 +149,11 @@ export const kingshotHeal: Recipe = {
         });
       }
 
-      await sleep(1000);
+      await sleep(200);
       return step(s);
     };
 
-    const startBatch = visibleButton(first) === "heal" ? await readNumber(phone, first) : 0;
-    const guessed = Math.round(startBatch / perAlly);
-    const startAllies = guessed >= 1 && guessed <= maxAllies ? guessed : 1;
-    if (startBatch) console.log(`${time()} box shows ${startBatch}, continuing for ${startAllies} ${startAllies === 1 ? "ally" : "allies"}`);
-    const reason = await step({
-      heals: 0,
-      batch: startBatch,
-      allies: startAllies,
-      batchAllies: startAllies,
-      idleSince: Date.now(),
-    });
+    const reason = await step({ heals: 0, batch: 0, allies: 1, batchAllies: 1, healedAt: 0, idleSince: Date.now() });
     console.log(`stopped: ${reason}`);
   },
 };

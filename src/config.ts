@@ -11,7 +11,7 @@ export const config = {
   teamId,
   bundleId: env.BUNDLE_ID || `wda.${teamId.toLowerCase()}.runner`,
   udid: env.DEVICE_UDID || undefined,
-  intervalMs: Number(env.INTERVAL_MS || 300),
+  intervalMs: Number(env.INTERVAL_MS || 0),
   maxIdleMs: Number(env.MAX_IDLE_SECONDS || 600) * 1000,
   env,
 };

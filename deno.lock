@@ -3,6 +3,7 @@
   "specifiers": {
     "jsr:@std/bytes@^1.0.6": "1.0.6",
     "jsr:@std/dotenv@~0.225.5": "0.225.8",
+    "jsr:@std/encoding@1": "1.0.11",
     "jsr:@std/streams@1": "1.2.0",
     "npm:fast-png@6.2.0": "6.2.0"
   },
@@ -12,6 +13,9 @@
     },
     "@std/dotenv@0.225.8": {
       "integrity": "27b8c1a9d00cbf938345a5924487c04d9b27bdd7e7bd1983f54bcf76d0a0174a"
+    },
+    "@std/encoding@1.0.11": {
+      "integrity": "e7cef2f0b3153bccc17431e7c864a1de03a4b6d9647389c43e08aaa775d37385"
     },
     "@std/streams@1.2.0": {
       "integrity": "256b934254778f2bf45f5713b934209ff29e9b4b7fd4ec095219966813758c5f",
@@ -42,6 +46,7 @@
   "workspace": {
     "dependencies": [
       "jsr:@std/dotenv@~0.225.5",
+      "jsr:@std/encoding@1",
       "jsr:@std/streams@1",
       "npm:fast-png@6.2.0"
     ]

@@ -1,3 +1,4 @@
+import { decodeBase64 } from "@std/encoding/base64";
 import { decode } from "fast-png";
 import { startOcr } from "./ocr.ts";
 import { sleep } from "./wda.ts";
@@ -27,7 +28,7 @@ export const connectPhone = async (base: string) => {
 
   const screenshot = async () => {
     const { value } = await fetch(`${base}/screenshot`).then((r) => r.json()).then(check);
-    return decode(Uint8Array.from(atob(value), (c) => c.charCodeAt(0)));
+    return decode(decodeBase64(value));
   };
 
   const tap = (point: { x: number; y: number }) => post(`/session/${sessionId}/wda/tap`, point);

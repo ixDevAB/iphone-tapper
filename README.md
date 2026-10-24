@@ -125,7 +125,7 @@ Change a value, save, and start again.
 | --- | --- | --- |
 | `TEAM_ID` | Which Apple developer team signs the helper app | Found automatically |
 | `BUNDLE_ID` | Name of the helper app on the phone | Made from your team |
-| `INTERVAL_MS` | Pause after each tap, in milliseconds | `300` |
+| `INTERVAL_MS` | Pause after each tap, in milliseconds | `0` |
 | `MAX_IDLE_SECONDS` | Stop when there has been nothing to press this long | `600` |
 | `TROOPS_PER_ALLY` | Kingshot: how many troops one helping ally heals | `60` |
 | `ALLY_TIMEOUT_SECONDS` | Kingshot: at the smallest batch, stop when a heal has not finished this long after Help | `240` |

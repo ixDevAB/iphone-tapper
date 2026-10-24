@@ -12,13 +12,17 @@ It looks at the phone screen before every tap and only presses the buttons the r
 deno task kingshot-heal
 ```
 
-Open the **Heal Injured** window in Kingshot, choose how many troops to heal per round, and start the recipe. It presses **Heal**, then **Help**, then **Heal** again, until all your troops are healed.
+Open the **Heal Injured** window in Kingshot and start the recipe. It presses **Heal**, then **Help**, then **Heal** again, until all your troops are healed.
 
 | It presses **Heal** | Then **Help** |
 | --- | --- |
 | <img src="docs/images/heal.png" width="280" alt="Heal Injured window with the Heal button"> | <img src="docs/images/help.png" width="280" alt="Heal Injured window while healing, with the Help button"> |
 
 If the button shows **Speed Up** or anything else, it waits until **Heal** comes back.
+
+**It heals more when more allies help.** It starts with 60 Infantry per round. After every **Help** it reads the "2 Allies have helped you" message and sets the next round to allies × 60, so 2 allies means 120 troops per round. How much one ally heals is different for every player, so change `TROOPS_PER_ALLY` in the [settings](#settings) to match yours.
+
+**It stops when allies stop helping.** If a heal has not finished 30 seconds after pressing Help, it stops by itself.
 
 ## What you need
 
@@ -121,6 +125,8 @@ Change a value, save, and start again.
 | `BUNDLE_ID` | Name of the helper app on the phone | Made from your team |
 | `INTERVAL_MS` | Pause after each tap, in milliseconds | `300` |
 | `MAX_IDLE_SECONDS` | Stop when there has been nothing to press this long | `600` |
+| `TROOPS_PER_ALLY` | Kingshot: how many troops one helping ally heals | `60` |
+| `ALLY_TIMEOUT_SECONDS` | Kingshot: stop when a heal has not finished this long after Help | `30` |
 | `DEVICE_UDID` | Pick a specific iPhone if several are connected | First connected iPhone |
 
 The recipes are made on an iPhone 17 Pro. On other models the buttons sit elsewhere and the recipe tells you it does not fit.

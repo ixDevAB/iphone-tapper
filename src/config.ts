@@ -13,4 +13,5 @@ export const config = {
   udid: env.DEVICE_UDID || undefined,
   intervalMs: Number(env.INTERVAL_MS || 300),
   maxIdleMs: Number(env.MAX_IDLE_SECONDS || 600) * 1000,
+  env,
 };

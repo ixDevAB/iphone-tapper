@@ -1,12 +1,23 @@
 {
   "version": "5",
   "specifiers": {
+    "jsr:@std/bytes@^1.0.6": "1.0.6",
     "jsr:@std/dotenv@~0.225.5": "0.225.8",
+    "jsr:@std/streams@1": "1.2.0",
     "npm:fast-png@6.2.0": "6.2.0"
   },
   "jsr": {
+    "@std/bytes@1.0.6": {
+      "integrity": "f6ac6adbd8ccd99314045f5703e23af0a68d7f7e58364b47d2c7f408aeb5820a"
+    },
     "@std/dotenv@0.225.8": {
       "integrity": "27b8c1a9d00cbf938345a5924487c04d9b27bdd7e7bd1983f54bcf76d0a0174a"
+    },
+    "@std/streams@1.2.0": {
+      "integrity": "256b934254778f2bf45f5713b934209ff29e9b4b7fd4ec095219966813758c5f",
+      "dependencies": [
+        "jsr:@std/bytes"
+      ]
     }
   },
   "npm": {
@@ -31,6 +42,7 @@
   "workspace": {
     "dependencies": [
       "jsr:@std/dotenv@~0.225.5",
+      "jsr:@std/streams@1",
       "npm:fast-png@6.2.0"
     ]
   }

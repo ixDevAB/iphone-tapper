@@ -9,38 +9,34 @@ Every 100 taps it takes a screenshot of the phone to check that the button is st
 - A Mac with Apple Silicon (M1 or newer)
 - An iPhone and a USB cable
 - **Xcode**, free from the Mac App Store
-- An **Apple Developer account**, signed in to Xcode (Xcode > Settings > Accounts)
+- An **Apple ID**. A free one works. A paid Apple Developer account is optional (see [Free or paid Apple account](#free-or-paid-apple-account)).
 - **Deno**: open the Terminal app and paste `curl --fail --silent --show-error --location https://deno.land/install.sh | sh`
 
 ## First time setup
 
 Do this once.
 
-1. **Turn on Developer Mode on the iPhone**
+1. **Sign in to Xcode**
+   Open Xcode, go to Xcode > Settings > Accounts, press **+** and sign in with your Apple ID.
+   Select your account, press **Manage Certificates**, press **+** and choose **Apple Development**.
+
+2. **Turn on Developer Mode on the iPhone**
    Settings > Privacy & Security > Developer Mode > On. The phone restarts.
 
-2. **Connect the phone**
+3. **Connect the phone**
    Plug the iPhone into the Mac, unlock it and tap **Trust** if it asks.
-   Open Xcode, go to Window > Devices and Simulators, and wait until the phone shows up without warnings.
+   In Xcode, go to Window > Devices and Simulators, and wait until the phone shows up without warnings.
 
-3. **Get the project**
+4. **Get the project and start it**
    In Terminal:
    ```sh
    git clone https://github.com/ixDevAB/iphone-tapper.git
    cd iphone-tapper
-   cp .env.example .env
-   open -e .env
-   ```
-
-4. **Fill in your details in `.env`** and save the file:
-   - `TEAM_ID`: your Apple Developer Team ID. Find it at [developer.apple.com/account](https://developer.apple.com/account) under Membership details.
-   - `BUNDLE_ID`: any unique name in the form `com.yourname.WebDriverAgentRunner`.
-
-5. **Start it**
-   ```sh
    deno task start
    ```
    The first start downloads and installs a helper app on your phone. This takes a few minutes. After that, starting is quick.
+
+5. **Free Apple ID only:** the phone will say **Untrusted Developer**. Go to Settings > General > VPN & Device Management, tap your Apple ID and **Trust**. Then run `deno task start` again.
 
 ## Every time you use it
 
@@ -56,12 +52,29 @@ Do this once.
 
 **Tip:** set Settings > Display & Brightness > Auto-Lock to **Never** while it runs, otherwise the screen turns off and the tapping stops.
 
+## Free or paid Apple account
+
+| | Free Apple ID | Paid Apple Developer ($99/year) |
+| --- | --- | --- |
+| Works | Yes | Yes |
+| Helper app lasts | 7 days, then run `deno task rebuild` | 1 year |
+| Trust prompt on the phone | Once | No |
+
 ## Settings
 
-All settings live in `.env`. Open it with `open -e .env`, change a value, save, and start again.
+Most people do not need to change anything. To change a setting, create a settings file once:
+
+```sh
+cp .env.example .env
+open -e .env
+```
+
+Change a value, save, and start again.
 
 | Setting | What it does | Default |
 | --- | --- | --- |
+| `TEAM_ID` | Which Apple developer team signs the helper app | Found automatically |
+| `BUNDLE_ID` | Name of the helper app on the phone | Made from your team |
 | `TAP_X`, `TAP_Y` | Where on the screen it taps | The Heal button on an iPhone 17 Pro |
 | `INTERVAL_MS` | Pause between taps, in milliseconds | `300` |
 | `CHECK_EVERY` | Take a screenshot to check the button every N taps | `100` |
@@ -76,11 +89,23 @@ On a different iPhone model the button may sit somewhere else, so ask someone te
 | --- | --- |
 | `no iphone found` | Plug in the cable, unlock the phone, try again. |
 | `is not reachable` | Unlock the phone and keep it unlocked while starting. |
-| `missing .env file` | Do step 3 and 4 of the first time setup. |
-| `xcodebuild failed, see build.log` | Check that you are signed in to Xcode with your developer account and that `TEAM_ID` is correct. |
+| `no apple development certificate found` | Do step 1 of the first time setup. |
+| `several developer teams found` | Create the settings file and copy one of the `TEAM_ID=` lines it shows into it. |
+| `xcodebuild failed, see build.log` | Check that you are signed in to Xcode and that the phone is unlocked. |
 | `webdriveragent did not start` | Unlock the phone, run `deno task rebuild`. |
-| The phone says **Untrusted Developer** | Settings > General > VPN & Device Management, tap your developer name and **Trust**. |
+| The phone says **Untrusted Developer** | Settings > General > VPN & Device Management, tap your Apple ID and **Trust**. |
 | It worked last week but not today | Run `deno task rebuild` to reinstall the helper app. |
+
+## Using Nix
+
+If you use Nix, you can skip installing Deno. The flake gives you Deno and git, Xcode still comes from the App Store.
+
+```sh
+nix develop
+deno task start
+```
+
+With direnv, run `direnv allow` once and the shell loads when you enter the folder.
 
 ## Good to know
 

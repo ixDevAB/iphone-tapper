@@ -58,12 +58,12 @@ Do this once.
    In Xcode, go to Xcode > Settings > Accounts, press **+** and sign in with your Apple ID.
    Select your account, press **Manage Certificates**, press **+** and choose **Apple Development**.
 
-5. **Turn on Developer Mode on the iPhone**
-   Settings > Privacy & Security > Developer Mode > On. The phone restarts.
-
-6. **Connect the phone**
+5. **Connect the phone**
    Plug the iPhone into the Mac, unlock it and tap **Trust** if it asks.
-   In Xcode, go to Window > Devices and Simulators, and wait until the phone shows up without warnings.
+   In Xcode, go to Window > Devices and Simulators, and wait until the phone shows up.
+
+6. **Turn on Developer Mode on the iPhone**
+   See [Developer Mode on the iPhone](#developer-mode-on-the-iphone) below. When it is on, Xcode shows the phone without warnings.
 
 7. **Start a recipe**
    ```sh
@@ -72,6 +72,20 @@ Do this once.
    The first start installs a helper app on your phone. This takes a few minutes. After that, starting is quick.
 
 8. **Free Apple ID only:** the phone will say **Untrusted Developer**. Go to Settings > General > VPN & Device Management, tap your Apple ID and **Trust**. Then start the recipe again.
+
+## Developer Mode on the iPhone
+
+Developer Mode lets your Mac install the helper app on the phone. You only turn it on once.
+
+1. **Connect the phone to the Mac first** (step 5 above), with Xcode open. The Developer Mode switch does not show up on the phone until it has been connected to a Mac with Xcode.
+2. On the iPhone, open **Settings > Privacy & Security**.
+3. Scroll all the way down to **Developer Mode** and tap it.
+4. Turn the switch **on** and tap **Restart**.
+5. After the restart, unlock the phone. A message asks if you want to turn on Developer Mode: tap **Turn On** and enter your passcode.
+
+**Don't see Developer Mode?** Unplug the phone, plug it in again with Xcode open, wait a minute, and look again. You can also check that the phone is on a recent iOS version (Settings > General > Software Update).
+
+**To turn it off later:** Settings > Privacy & Security > Developer Mode > off. The recipes stop working until you turn it on again.
 
 ## Every time you use it
 

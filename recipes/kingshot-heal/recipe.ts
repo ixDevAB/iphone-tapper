@@ -80,6 +80,7 @@ export const kingshotHeal: Recipe = {
     const allyTimeoutMs = Number(settings.env.ALLY_TIMEOUT_SECONDS || 240) * 1000;
     const cancelAfterMs = Number(settings.env.CANCEL_AFTER_SECONDS || 10) * 1000;
     const checkEvery = Number(settings.env.CHECK_ALLIES_EVERY || 10);
+    const maxAllies = Number(settings.env.MAX_ALLIES || 20);
 
     const first = await phone.screenshot();
     if (first.width !== screenWidth) throw new Error(`this recipe only works on an iPhone 17 Pro`);
@@ -100,7 +101,7 @@ export const kingshotHeal: Recipe = {
       const checkRound = previous.heals % checkEvery === 0;
       const seen = name === "heal" && checkRound ? await alliesIn(phone, screen) : undefined;
       if (seen && seen !== previous.allies) console.log(`${time()} ${seen} allies helped`);
-      const s = seen ? { ...previous, allies: seen } : previous;
+      const s = seen && seen <= maxAllies ? { ...previous, allies: seen } : previous;
 
       if (Date.now() - s.idleSince > settings.maxIdleMs) return `nothing to press for ${settings.maxIdleMs / 1000}s`;
 
@@ -152,7 +153,8 @@ export const kingshotHeal: Recipe = {
     };
 
     const startBatch = visibleButton(first) === "heal" ? await readNumber(phone, first) : 0;
-    const startAllies = Math.max(1, Math.round(startBatch / perAlly));
+    const guessed = Math.round(startBatch / perAlly);
+    const startAllies = guessed >= 1 && guessed <= maxAllies ? guessed : 1;
     if (startBatch) console.log(`${time()} box shows ${startBatch}, continuing for ${startAllies} ${startAllies === 1 ? "ally" : "allies"}`);
     const reason = await step({
       heals: 0,

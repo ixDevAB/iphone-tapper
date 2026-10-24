@@ -131,6 +131,7 @@ Change a value, save, and start again.
 | `ALLY_TIMEOUT_SECONDS` | Kingshot: at the smallest batch, stop when a heal has not finished this long after Help | `240` |
 | `CANCEL_AFTER_SECONDS` | Kingshot: cancel a bigger heal that has not finished this long after Help | `10` |
 | `CHECK_ALLIES_EVERY` | Kingshot: read how many allies helped every N rounds (lower is slower) | `10` |
+| `MAX_ALLIES` | Kingshot: never size a batch for more allies than this | `20` |
 | `DEVICE_UDID` | Pick a specific iPhone if several are connected | First connected iPhone |
 
 The recipes are made on an iPhone 17 Pro. On other models the buttons sit elsewhere and the recipe tells you it does not fit.

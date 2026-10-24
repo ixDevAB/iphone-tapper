@@ -1,56 +1,92 @@
 # iPhone Tapper
 
-Taps a button in an iPhone game over and over, controlled from your Mac. It was made for the **Heal Injured** window: it presses **Heal**, then **Help**, then **Heal** again, until all your troops are healed.
+Presses buttons in iPhone games for you, controlled from your Mac. It comes with ready-made **recipes**, for example healing all your troops in Kingshot.
 
-Every 100 taps it takes a screenshot of the phone to check that the button is still there. If a popup is in the way, it waits instead of tapping.
+It looks at the phone screen before every tap and only presses the buttons the recipe allows. Everything else, like Speed Up or buttons that cost gems, is never touched.
+
+## Recipes
+
+### Kingshot: heal troops
+
+```sh
+deno task kingshot-heal
+```
+
+Open the **Heal Injured** window in Kingshot, choose how many troops to heal per round, and start the recipe. It presses **Heal**, then **Help**, then **Heal** again, until all your troops are healed.
+
+| It presses **Heal** | Then **Help** |
+| --- | --- |
+| <img src="docs/images/heal.png" width="280" alt="Heal Injured window with the Heal button"> | <img src="docs/images/help.png" width="280" alt="Heal Injured window while healing, with the Help button"> |
+
+If the button shows **Speed Up** or anything else, it waits until **Heal** comes back.
 
 ## What you need
 
 - A Mac with Apple Silicon (M1 or newer)
 - An iPhone and a USB cable
-- **Xcode**, free from the Mac App Store
 - An **Apple ID**. A free one works. A paid Apple Developer account is optional (see [Free or paid Apple account](#free-or-paid-apple-account)).
-- **Deno**: open the Terminal app and paste `curl --fail --silent --show-error --location https://deno.land/install.sh | sh`
+
+Everything else is installed in the steps below.
 
 ## First time setup
 
 Do this once.
 
-1. **Sign in to Xcode**
-   Open Xcode, go to Xcode > Settings > Accounts, press **+** and sign in with your Apple ID.
+1. **Install Nix**
+   Nix installs the tools this project needs. Open the **Terminal** app and paste:
+   ```sh
+   curl --proto "=https" --tlsv1.2 --silent --show-error --fail --location https://install.determinate.systems/nix | sh -s -- install
+   ```
+   Follow the questions, then close Terminal and open it again.
+
+2. **Get the project**
+   ```sh
+   nix run nixpkgs#git -- clone https://github.com/ixDevAB/iphone-tapper.git
+   cd iphone-tapper
+   nix develop
+   ```
+   `nix develop` gives you all the tools for this project. Run it every time you open a new Terminal.
+
+3. **Install Xcode**
+   Sign in to the App Store app on your Mac first, then:
+   ```sh
+   mas install 497799835
+   ```
+   This takes a while. Open Xcode once when it is done and accept the license.
+
+4. **Sign in to Xcode**
+   In Xcode, go to Xcode > Settings > Accounts, press **+** and sign in with your Apple ID.
    Select your account, press **Manage Certificates**, press **+** and choose **Apple Development**.
 
-2. **Turn on Developer Mode on the iPhone**
+5. **Turn on Developer Mode on the iPhone**
    Settings > Privacy & Security > Developer Mode > On. The phone restarts.
 
-3. **Connect the phone**
+6. **Connect the phone**
    Plug the iPhone into the Mac, unlock it and tap **Trust** if it asks.
    In Xcode, go to Window > Devices and Simulators, and wait until the phone shows up without warnings.
 
-4. **Get the project and start it**
-   In Terminal:
+7. **Start a recipe**
    ```sh
-   git clone https://github.com/ixDevAB/iphone-tapper.git
-   cd iphone-tapper
-   deno task start
+   deno task kingshot-heal
    ```
-   The first start downloads and installs a helper app on your phone. This takes a few minutes. After that, starting is quick.
+   The first start installs a helper app on your phone. This takes a few minutes. After that, starting is quick.
 
-5. **Free Apple ID only:** the phone will say **Untrusted Developer**. Go to Settings > General > VPN & Device Management, tap your Apple ID and **Trust**. Then run `deno task start` again.
+8. **Free Apple ID only:** the phone will say **Untrusted Developer**. Go to Settings > General > VPN & Device Management, tap your Apple ID and **Trust**. Then start the recipe again.
 
 ## Every time you use it
 
 1. Plug in the iPhone and unlock it.
-2. Open the game and go to the **Heal Injured** window.
+2. Open the game on the right screen, for Kingshot the **Heal Injured** window.
 3. In Terminal:
    ```sh
    cd iphone-tapper
-   deno task start
+   nix develop
+   deno task kingshot-heal
    ```
 4. Leave the phone alone. You will see "Automation Running" on the phone, that is normal.
-5. Press **Ctrl + C** in Terminal to stop. It also stops by itself when there has been nothing to heal for 10 minutes.
+5. Press **Ctrl + C** in Terminal to stop. It also stops by itself when there has been nothing to press for 10 minutes.
 
-**Tip:** set Settings > Display & Brightness > Auto-Lock to **Never** while it runs, otherwise the screen turns off and the tapping stops.
+**Tip:** set Settings > Display & Brightness > Auto-Lock to **Never** while it runs. When the phone locks, it stops accepting taps.
 
 ## Free or paid Apple account
 
@@ -75,37 +111,28 @@ Change a value, save, and start again.
 | --- | --- | --- |
 | `TEAM_ID` | Which Apple developer team signs the helper app | Found automatically |
 | `BUNDLE_ID` | Name of the helper app on the phone | Made from your team |
-| `TAP_X`, `TAP_Y` | Where on the screen it taps | The Heal button on an iPhone 17 Pro |
-| `INTERVAL_MS` | Pause between taps, in milliseconds | `300` |
-| `CHECK_EVERY` | Take a screenshot to check the button every N taps | `100` |
-| `MAX_IDLE_SECONDS` | Stop when the button has been missing this long | `600` |
+| `INTERVAL_MS` | Pause after each tap, in milliseconds | `300` |
+| `MAX_IDLE_SECONDS` | Stop when there has been nothing to press this long | `600` |
 | `DEVICE_UDID` | Pick a specific iPhone if several are connected | First connected iPhone |
 
-On a different iPhone model the button may sit somewhere else, so ask someone technical to adjust `TAP_X` and `TAP_Y`.
+The recipes are made on an iPhone 17 Pro. On other models the buttons sit elsewhere and the recipe tells you it does not fit.
 
 ## When something goes wrong
 
 | What you see | What to do |
 | --- | --- |
+| `command not found: deno` | Run `nix develop` first. |
 | `no iphone found` | Plug in the cable, unlock the phone, try again. |
 | `is not reachable` | Unlock the phone and keep it unlocked while starting. |
-| `no apple development certificate found` | Do step 1 of the first time setup. |
+| `no apple development certificate found` | Do step 4 of the first time setup. |
 | `several developer teams found` | Create the settings file and copy one of the `TEAM_ID=` lines it shows into it. |
+| `the phone stopped accepting taps` | The phone locked. Unlock it, set Auto-Lock to Never and start again. |
 | `xcodebuild failed, see build.log` | Check that you are signed in to Xcode and that the phone is unlocked. |
 | `webdriveragent did not start` | Unlock the phone, run `deno task rebuild`. |
 | The phone says **Untrusted Developer** | Settings > General > VPN & Device Management, tap your Apple ID and **Trust**. |
 | It worked last week but not today | Run `deno task rebuild` to reinstall the helper app. |
 
-## Using Nix
-
-If you use Nix, you can skip installing Deno. The flake gives you Deno and git, Xcode still comes from the App Store.
-
-```sh
-nix develop
-deno task start
-```
-
-With direnv, run `direnv allow` once and the shell loads when you enter the folder.
+**Tip for direnv users:** run `direnv allow` once and the tools load by themselves when you enter the folder, so you can skip `nix develop`.
 
 ## Good to know
 

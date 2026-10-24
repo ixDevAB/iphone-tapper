@@ -14,6 +14,7 @@
           buildInputs = with pkgs; [
             deno
             git
+            mas
           ];
 
           shellHook = ''

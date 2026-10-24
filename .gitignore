@@ -4,3 +4,5 @@ build/
 *.log
 *.png
 .DS_Store
+!recipes/**/*.png
+!docs/images/*.png

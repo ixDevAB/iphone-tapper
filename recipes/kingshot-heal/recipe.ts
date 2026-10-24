@@ -25,8 +25,15 @@ const shows = (screen: Image, r: { img: Image; x: number; y: number }) => differ
 
 const visibleButton = (screen: Image) => shows(screen, refs.heal) ? "heal" : shows(screen, refs.help) ? "help" : undefined;
 
-const readNumber = async (phone: Phone, screen: Image) =>
-  Number((await phone.ocr(crop(screen, infantryBoxRegion))).map((l) => l.text).join("").replace(/\D/g, ""));
+const readNumber = async (phone: Phone, screen: Image) => {
+  const r = infantryBoxRegion;
+  const inside = (await phone.ocr(screen)).filter((l) => {
+    const cx = (l.x + l.width / 2) * screen.width;
+    const cy = (l.y + l.height / 2) * screen.height;
+    return cx > r.x && cx < r.x + r.width && cy > r.y && cy < r.y + r.height;
+  });
+  return Number(inside.map((l) => l.text).join("").replace(/\D/g, ""));
+};
 
 const setBatch = async (phone: Phone, troops: number) => {
   await phone.tap(infantryBox);
@@ -120,9 +127,10 @@ export const kingshotHeal: Recipe = {
       const target = s.allies * perAlly;
 
       if (name === "heal" && s.batch !== target) {
-        const batch = await setBatch(phone, target);
-        console.log(`${time()} batch set to ${batch}${batch === target ? "" : ` (wanted ${target})`}`);
-        return step({ ...s, batch: batch || s.batch, idleSince: Date.now() });
+        const read = await setBatch(phone, target);
+        const batch = read || target;
+        console.log(`${time()} batch set to ${batch}${read ? (read === target ? "" : ` (wanted ${target})`) : " (could not read it back)"}`);
+        return step({ ...s, batch, idleSince: Date.now() });
       }
 
       if (name === "heal") {

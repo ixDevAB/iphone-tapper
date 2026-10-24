@@ -7,7 +7,9 @@ const bin = `${root}build/ocr`;
 export type TextLine = { text: string; x: number; y: number; width: number; height: number };
 
 export const ensureOcr = async () => {
-  if (await Deno.stat(bin).then(() => true, () => false)) return;
+  const built = await Deno.stat(bin).then((s) => s.mtime?.getTime() ?? 0, () => 0);
+  const source = (await Deno.stat(`${root}src/ocr.swift`)).mtime?.getTime() ?? 0;
+  if (built > source) return;
   await Deno.mkdir(`${root}build`, { recursive: true });
   const { code } = await new Deno.Command("swiftc", { args: ["-O", `${root}src/ocr.swift`, "-o", bin] }).output();
   if (code !== 0) throw new Error("could not build the text reader, is xcode installed?");

@@ -43,25 +43,39 @@ const alliesIn = async (phone: Phone, screen: Image) => {
 
 const watchForAllies = async (phone: Phone, until: number): Promise<number | undefined> => {
   if (Date.now() > until) return undefined;
-  const allies = await alliesIn(phone, await phone.screenshot());
-  return allies ?? watchForAllies(phone, until);
+  const screen = await phone.screenshot();
+  const allies = await alliesIn(phone, screen);
+  if (allies || visibleButton(screen) === "heal") return allies;
+  return watchForAllies(phone, until);
 };
 
 export const kingshotHeal: Recipe = {
   description: "Kingshot: presses Heal, then Help, and grows the batch with every ally that helps. Never presses Speed Up or Finish.",
   run: async (phone, settings) => {
     const perAlly = Number(settings.env.TROOPS_PER_ALLY || 60);
-    const allyTimeoutMs = Number(settings.env.ALLY_TIMEOUT_SECONDS || 30) * 1000;
+    const allyTimeoutMs = Number(settings.env.ALLY_TIMEOUT_SECONDS || 240) * 1000;
 
     const first = await phone.screenshot();
     if (first.width !== screenWidth) throw new Error(`this recipe only works on an iPhone 17 Pro`);
 
-    type State = { heals: number; batch: number; allies: number; helpedAt?: number; idleSince: number };
+    type State = {
+      heals: number;
+      batch: number;
+      allies: number;
+      helpedAt?: number;
+      alliesSeenAt?: number;
+      idleSince: number;
+    };
 
     const step = async (s: State): Promise<string> => {
       if (Date.now() - s.idleSince > settings.maxIdleMs) return `nothing to press for ${settings.maxIdleMs / 1000}s`;
-      if (s.helpedAt && Date.now() - s.helpedAt > allyTimeoutMs) {
+      const alliesRecently = s.alliesSeenAt !== undefined && Date.now() - s.alliesSeenAt < 2 * allyTimeoutMs;
+      if (s.helpedAt && Date.now() - s.helpedAt > allyTimeoutMs && !alliesRecently) {
         return `allies stopped helping, heal did not finish within ${allyTimeoutMs / 1000}s`;
+      }
+      if (s.helpedAt && Date.now() - s.helpedAt > allyTimeoutMs) {
+        console.log(`${time()} allies could not finish this heal, waiting for the timer`);
+        return step({ ...s, helpedAt: undefined, idleSince: Date.now() });
       }
       const screen = await phone.screenshot();
       const name = visibleButton(screen);
@@ -84,7 +98,13 @@ export const kingshotHeal: Recipe = {
         await phone.tap(healButton);
         const allies = await watchForAllies(phone, Date.now() + 3000);
         console.log(`${time()} help${allies ? `, ${allies} ${allies === 1 ? "ally" : "allies"} helped` : ""}`);
-        return step({ ...s, allies: allies ?? s.allies, helpedAt: Date.now(), idleSince: Date.now() });
+        return step({
+          ...s,
+          allies: allies ?? s.allies,
+          helpedAt: Date.now(),
+          alliesSeenAt: allies ? Date.now() : s.alliesSeenAt,
+          idleSince: Date.now(),
+        });
       }
 
       await sleep(1000);

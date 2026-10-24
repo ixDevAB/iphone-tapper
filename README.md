@@ -22,7 +22,7 @@ If the button shows **Speed Up** or anything else, it waits until **Heal** comes
 
 **It heals more when more allies help.** It starts with 60 Infantry per round. After every **Help** it reads the "2 Allies have helped you" message and sets the next round to allies × 60, so 2 allies means 120 troops per round. How much one ally heals is different for every player, so change `TROOPS_PER_ALLY` in the [settings](#settings) to match yours.
 
-**It stops when allies stop helping.** If a heal has not finished 30 seconds after pressing Help, it stops by itself.
+**It stops when allies stop helping.** If a heal has not finished 4 minutes after pressing Help, it stops by itself.
 
 ## What you need
 
@@ -126,7 +126,7 @@ Change a value, save, and start again.
 | `INTERVAL_MS` | Pause after each tap, in milliseconds | `300` |
 | `MAX_IDLE_SECONDS` | Stop when there has been nothing to press this long | `600` |
 | `TROOPS_PER_ALLY` | Kingshot: how many troops one helping ally heals | `60` |
-| `ALLY_TIMEOUT_SECONDS` | Kingshot: stop when a heal has not finished this long after Help | `30` |
+| `ALLY_TIMEOUT_SECONDS` | Kingshot: stop when a heal has not finished this long after Help | `240` |
 | `DEVICE_UDID` | Pick a specific iPhone if several are connected | First connected iPhone |
 
 The recipes are made on an iPhone 17 Pro. On other models the buttons sit elsewhere and the recipe tells you it does not fit.

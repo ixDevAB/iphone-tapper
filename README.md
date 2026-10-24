@@ -25,21 +25,15 @@ If the button shows **Speed Up** or anything else, it waits until **Heal** comes
 - A Mac with Apple Silicon (M1 or newer)
 - An iPhone and a USB cable
 - An **Apple ID**. A free one works. A paid Apple Developer account is optional (see [Free or paid Apple account](#free-or-paid-apple-account)).
+- **Nix**. The project's flake gives you all the tools it needs.
 
-Everything else is installed in the steps below.
+**Not using Nix?** Install [Deno](https://deno.com) instead with `curl --fail --silent --show-error --location https://deno.land/install.sh | sh`, install Xcode from the App Store, and skip every `nix develop` below.
 
 ## First time setup
 
 Do this once.
 
-1. **Install Nix**
-   Nix installs the tools this project needs. Open the **Terminal** app and paste:
-   ```sh
-   curl --proto "=https" --tlsv1.2 --silent --show-error --fail --location https://install.determinate.systems/nix | sh -s -- install
-   ```
-   Follow the questions, then close Terminal and open it again.
-
-2. **Get the project**
+1. **Get the project**
    ```sh
    nix run nixpkgs#git -- clone https://github.com/ixDevAB/iphone-tapper.git
    cd iphone-tapper
@@ -47,37 +41,37 @@ Do this once.
    ```
    `nix develop` gives you all the tools for this project. Run it every time you open a new Terminal.
 
-3. **Install Xcode**
+2. **Install Xcode**
    Sign in to the App Store app on your Mac first, then:
    ```sh
    mas install 497799835
    ```
    This takes a while. Open Xcode once when it is done and accept the license.
 
-4. **Sign in to Xcode**
+3. **Sign in to Xcode**
    In Xcode, go to Xcode > Settings > Accounts, press **+** and sign in with your Apple ID.
    Select your account, press **Manage Certificates**, press **+** and choose **Apple Development**.
 
-5. **Connect the phone**
+4. **Connect the phone**
    Plug the iPhone into the Mac, unlock it and tap **Trust** if it asks.
    In Xcode, go to Window > Devices and Simulators, and wait until the phone shows up.
 
-6. **Turn on Developer Mode on the iPhone**
+5. **Turn on Developer Mode on the iPhone**
    See [Developer Mode on the iPhone](#developer-mode-on-the-iphone) below. When it is on, Xcode shows the phone without warnings.
 
-7. **Start a recipe**
+6. **Start a recipe**
    ```sh
    deno task kingshot-heal
    ```
    The first start installs a helper app on your phone. This takes a few minutes. After that, starting is quick.
 
-8. **Free Apple ID only:** the phone will say **Untrusted Developer**. Go to Settings > General > VPN & Device Management, tap your Apple ID and **Trust**. Then start the recipe again.
+7. **Free Apple ID only:** the phone will say **Untrusted Developer**. Go to Settings > General > VPN & Device Management, tap your Apple ID and **Trust**. Then start the recipe again.
 
 ## Developer Mode on the iPhone
 
 Developer Mode lets your Mac install the helper app on the phone. You only turn it on once.
 
-1. **Connect the phone to the Mac first** (step 5 above), with Xcode open. The Developer Mode switch does not show up on the phone until it has been connected to a Mac with Xcode.
+1. **Connect the phone to the Mac first** (step 4 above), with Xcode open. The Developer Mode switch does not show up on the phone until it has been connected to a Mac with Xcode.
 2. On the iPhone, open **Settings > Privacy & Security**.
 3. Scroll all the way down to **Developer Mode** and tap it.
 4. Turn the switch **on** and tap **Restart**.
@@ -138,7 +132,7 @@ The recipes are made on an iPhone 17 Pro. On other models the buttons sit elsewh
 | `command not found: deno` | Run `nix develop` first. |
 | `no iphone found` | Plug in the cable, unlock the phone, try again. |
 | `is not reachable` | Unlock the phone and keep it unlocked while starting. |
-| `no apple development certificate found` | Do step 4 of the first time setup. |
+| `no apple development certificate found` | Do step 3 of the first time setup. |
 | `several developer teams found` | Create the settings file and copy one of the `TEAM_ID=` lines it shows into it. |
 | `the phone stopped accepting taps` | The phone locked. Unlock it, set Auto-Lock to Never and start again. |
 | `xcodebuild failed, see build.log` | Check that you are signed in to Xcode and that the phone is unlocked. |

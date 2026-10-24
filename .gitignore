@@ -1,0 +1,6 @@
+.env
+vendor/
+build/
+*.log
+*.png
+.DS_Store

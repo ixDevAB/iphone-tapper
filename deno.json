@@ -1,0 +1,10 @@
+{
+  "tasks": {
+    "start": "deno run --allow-all src/start.ts",
+    "rebuild": "deno run --allow-all src/start.ts --rebuild"
+  },
+  "imports": {
+    "@std/dotenv": "jsr:@std/dotenv@^0.225.5",
+    "fast-png": "npm:fast-png@6.2.0"
+  }
+}

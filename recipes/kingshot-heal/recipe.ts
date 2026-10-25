@@ -64,6 +64,7 @@ export const kingshotHeal: Recipe = {
     const cancelAfterMs = Number(settings.env.CANCEL_AFTER_SECONDS || 10) * 1000;
     const growAfter = Number(settings.env.GROW_AFTER_ROUNDS || 10);
     const startAllies = Number(settings.env.START_ALLIES || 1);
+    const fastMs = Number(settings.env.FAST_FINISH_SECONDS || 3) * 1000;
     const maxAllies = Number(settings.env.MAX_ALLIES || 20);
     const holdMs = Number(settings.env.HOLD_AFTER_CANCEL_SECONDS || 300) * 1000;
 
@@ -86,9 +87,10 @@ export const kingshotHeal: Recipe = {
       const screen = await phone.screenshot();
       const name = visibleButton(screen);
       const justFinished = name === "heal" && previous.helpedAt !== undefined;
-      const finished = justFinished ? previous.finished + 1 : previous.finished;
+      const fast = justFinished && Date.now() - (previous.helpedAt ?? 0) < fastMs;
+      const finished = fast ? previous.finished + 1 : justFinished ? 0 : previous.finished;
       const grow = finished >= growAfter && Date.now() >= previous.holdUntil && previous.allies < maxAllies;
-      if (grow) console.log(`${time()} ${growAfter} heals in a row finished, trying ${previous.allies + 1} allies`);
+      if (grow) console.log(`${time()} ${growAfter} heals in a row finished fast, trying ${previous.allies + 1} allies`);
       const s = {
         ...previous,
         allies: grow ? previous.allies + 1 : previous.allies,

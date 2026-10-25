@@ -26,7 +26,7 @@ If the button shows **Speed Up** or anything else, it waits until **Heal** comes
 deno task kingshot-heal --allies 5
 ```
 
-When 10 heals in a row finish right away, it tries one ally more (60 more troops). How much one ally heals is different for every player, so change `TROOPS_PER_ALLY` in the [settings](#settings) to match yours.
+When 10 heals in a row finish within 3 seconds of Help, it tries one ally more (60 more troops). Slower heals mean the allies are at their limit, so it stops growing. How much one ally heals is different for every player, so change `TROOPS_PER_ALLY` in the [settings](#settings) to match yours.
 
 **It cancels heals the allies cannot finish.** It remembers how many allies each heal was sized for. If fewer help and the heal has not finished 10 seconds after Help, it presses **Cancel healing** and **Confirm** (all resources are refunded) and starts over with a smaller batch.
 
@@ -140,6 +140,7 @@ Change a value, save, and start again.
 | `CANCEL_AFTER_SECONDS` | Kingshot: cancel a bigger heal that has not finished this long after Help | `10` |
 | `START_ALLIES` | Kingshot: how many allies to size the first batch for (same as `--allies`) | `1` |
 | `GROW_AFTER_ROUNDS` | Kingshot: try one ally more after this many heals in a row finished | `10` |
+| `FAST_FINISH_SECONDS` | Kingshot: a heal only counts toward growing if it finished this fast after Help | `3` |
 | `MAX_ALLIES` | Kingshot: never size a batch for more allies than this | `20` |
 | `HOLD_AFTER_CANCEL_SECONDS` | Kingshot: after a cancel, do not grow the batch again for this long | `300` |
 | `DEVICE_UDID` | Pick a specific iPhone if several are connected | First connected iPhone |

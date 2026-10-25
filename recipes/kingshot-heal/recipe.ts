@@ -125,20 +125,22 @@ export const kingshotHeal: Recipe = {
         return step({ ...s, batch: target, idleSince: Date.now() });
       }
 
-      if (name === "heal" && Date.now() - s.healedAt < 1500) {
+      if (name === "heal" && Date.now() - s.healedAt < 500) {
         await sleep(200);
         return step(s);
       }
 
       if (name === "heal") {
         await phone.tap(healButton);
+        await sleep(400);
+        await phone.tap(healButton);
         const batchAllies = Math.max(1, Math.round(s.batch / perAlly));
-        console.log(`${time()} heal ${s.heals + 1} (${s.batch} troops for ${batchAllies} ${batchAllies === 1 ? "ally" : "allies"})`);
+        console.log(`${time()} heal ${s.heals + 1} + help (${s.batch} troops for ${batchAllies} ${batchAllies === 1 ? "ally" : "allies"})`);
         await sleep(settings.intervalMs);
-        return step({ ...s, heals: s.heals + 1, healedAt: Date.now(), batchAllies, helpedAt: undefined, idleSince: Date.now() });
+        return step({ ...s, heals: s.heals + 1, healedAt: Date.now(), batchAllies, helpedAt: Date.now(), idleSince: Date.now() });
       }
 
-      if (name === "help" && !s.helpedAt) {
+      if (name === "help" && (!s.helpedAt || Date.now() - s.healedAt > 1500)) {
         await phone.tap(healButton);
         console.log(`${time()} help`);
         return step({ ...s, helpedAt: Date.now(), idleSince: Date.now() });

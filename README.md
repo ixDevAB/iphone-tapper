@@ -135,6 +135,7 @@ Change a value, save, and start again.
 | `BUNDLE_ID` | Name of the helper app on the phone | Made from your team |
 | `INTERVAL_MS` | Pause after each tap, in milliseconds | `0` |
 | `MAX_IDLE_SECONDS` | Stop when there has been nothing to press this long | `600` |
+| `CLOCK` | Time format in the output: `24h` (14:52:08) or `12h` (2:52:08 PM) | `24h` |
 | `TROOPS_PER_ALLY_XI` | Kingshot: how many tier XI troops one helping ally heals | `60` |
 | `TROOPS_PER_ALLY_X` | Kingshot: how many tier X troops one helping ally heals | `140` |
 | `TROOPS_PER_ALLY` | Kingshot: troops per ally for any other tier | `60` |

@@ -1,3 +1,4 @@
+import { clock } from "../../src/clock.ts";
 import { difference, type Image, loadImage } from "../../src/image.ts";
 import type { Phone } from "../../src/phone.ts";
 import type { Recipe } from "../../src/recipes.ts";
@@ -22,7 +23,6 @@ const tiers = [
   { name: "X", ref: ref("tier-x.png", 203, 1098), setting: "TROOPS_PER_ALLY_X", troops: 140 },
 ];
 
-const time = () => new Date().toLocaleTimeString();
 
 const shows = (screen: Image, r: { img: Image; x: number; y: number }) => difference(screen, r.img, r.x, r.y) < 12;
 
@@ -63,6 +63,7 @@ export const kingshotHeal: Recipe = {
   description:
     "Kingshot: presses Heal, then Help, grows the batch while allies finish every heal, and cancels a heal they cannot finish. Never presses Speed Up or Finish.",
   run: async (phone, settings) => {
+    const time = clock(settings.env.CLOCK);
     const fallbackPerAlly = Number(settings.env.TROOPS_PER_ALLY || 60);
     const perAllyOn = (screen: Image, last: number) => {
       const tier = tiers.find((t) => shows(screen, t.ref));

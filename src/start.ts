@@ -5,12 +5,15 @@ import { connectPhone } from "./phone.ts";
 import { recipes } from "./recipes.ts";
 import { ensureWda, startWda } from "./wda.ts";
 
-const name = Deno.args.find((a) => !a.startsWith("--")) ?? "";
+const name = Deno.args[0] ?? "";
 const recipe = recipes[name];
 if (!recipe) {
   console.log(`pick a recipe:\n${Object.entries(recipes).map(([n, r]) => `  deno task ${n}  ${r.description}`).join("\n")}`);
   Deno.exit(1);
 }
+
+const alliesArg = Deno.args.indexOf("--allies");
+if (alliesArg >= 0) config.env.START_ALLIES = Deno.args[alliesArg + 1] ?? "1";
 
 const phone = await findPhone(config.udid);
 console.log(`found ${phone.name}`);

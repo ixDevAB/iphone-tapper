@@ -17,6 +17,10 @@ const refs = {
   cancel: ref("cancel.png", 150, 1925),
   confirm: ref("confirm.png", 745, 1570),
 };
+const tiers = [
+  { name: "XI", ref: ref("tier-xi.png", 203, 1098), setting: "TROOPS_PER_ALLY_XI", troops: 60 },
+  { name: "X", ref: ref("tier-x.png", 203, 1098), setting: "TROOPS_PER_ALLY_X", troops: 140 },
+];
 
 const time = () => new Date().toLocaleTimeString();
 
@@ -59,7 +63,11 @@ export const kingshotHeal: Recipe = {
   description:
     "Kingshot: presses Heal, then Help, grows the batch while allies finish every heal, and cancels a heal they cannot finish. Never presses Speed Up or Finish.",
   run: async (phone, settings) => {
-    const perAlly = Number(settings.env.TROOPS_PER_ALLY || 60);
+    const fallbackPerAlly = Number(settings.env.TROOPS_PER_ALLY || 60);
+    const perAllyOn = (screen: Image, last: number) => {
+      const tier = tiers.find((t) => shows(screen, t.ref));
+      return tier ? Number(settings.env[tier.setting] || tier.troops) : last;
+    };
     const allyTimeoutMs = Number(settings.env.ALLY_TIMEOUT_SECONDS || 240) * 1000;
     const cancelAfterMs = Number(settings.env.CANCEL_AFTER_SECONDS || 10) * 1000;
     const growAfter = Number(settings.env.GROW_AFTER_ROUNDS || 10);
@@ -80,6 +88,7 @@ export const kingshotHeal: Recipe = {
       helpedAt?: number;
       holdUntil: number;
       finished: number;
+      perAlly: number;
       idleSince: number;
     };
 
@@ -119,12 +128,13 @@ export const kingshotHeal: Recipe = {
 
       if (waited > allyTimeoutMs) return `allies stopped helping, heal did not finish within ${allyTimeoutMs / 1000}s`;
 
+      const perAlly = name === "heal" ? perAllyOn(screen, s.perAlly) : s.perAlly;
       const target = s.allies * perAlly;
 
       if (name === "heal" && s.batch !== target) {
         await setBatch(phone, target);
         console.log(`${time()} batch set to ${target}`);
-        return step({ ...s, batch: target, idleSince: Date.now() });
+        return step({ ...s, batch: target, perAlly, idleSince: Date.now() });
       }
 
       if (name === "heal" && Date.now() - s.healedAt < 500) {
@@ -160,6 +170,7 @@ export const kingshotHeal: Recipe = {
       healedAt: 0,
       holdUntil: 0,
       finished: 0,
+      perAlly: fallbackPerAlly,
       idleSince: Date.now(),
     });
     console.log(`stopped: ${reason}`);

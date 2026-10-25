@@ -26,7 +26,7 @@ If the button shows **Speed Up** or anything else, it waits until **Heal** comes
 deno task kingshot-heal --allies 5
 ```
 
-When 10 heals in a row finish within 3 seconds of Help, it tries one ally more (60 more troops). Slower heals mean the allies are at their limit, so it stops growing. How much one ally heals is different for every player, so change `TROOPS_PER_ALLY` in the [settings](#settings) to match yours.
+When 10 heals in a row finish within 3 seconds of Help, it tries one ally more. Slower heals mean the allies are at their limit, so it stops growing. It reads the tier badge (XI or X) on the top troop and uses the right amount per ally: 60 for XI and 140 for X. How much one ally heals is different for every player, so change `TROOPS_PER_ALLY_XI` and `TROOPS_PER_ALLY_X` in the [settings](#settings) to match yours.
 
 **It cancels heals the allies cannot finish.** It remembers how many allies each heal was sized for. If fewer help and the heal has not finished 10 seconds after Help, it presses **Cancel healing** and **Confirm** (all resources are refunded) and starts over with a smaller batch.
 
@@ -135,7 +135,9 @@ Change a value, save, and start again.
 | `BUNDLE_ID` | Name of the helper app on the phone | Made from your team |
 | `INTERVAL_MS` | Pause after each tap, in milliseconds | `0` |
 | `MAX_IDLE_SECONDS` | Stop when there has been nothing to press this long | `600` |
-| `TROOPS_PER_ALLY` | Kingshot: how many troops one helping ally heals | `60` |
+| `TROOPS_PER_ALLY_XI` | Kingshot: how many tier XI troops one helping ally heals | `60` |
+| `TROOPS_PER_ALLY_X` | Kingshot: how many tier X troops one helping ally heals | `140` |
+| `TROOPS_PER_ALLY` | Kingshot: troops per ally for any other tier | `60` |
 | `ALLY_TIMEOUT_SECONDS` | Kingshot: at the smallest batch, stop when a heal has not finished this long after Help | `240` |
 | `CANCEL_AFTER_SECONDS` | Kingshot: cancel a bigger heal that has not finished this long after Help | `10` |
 | `START_ALLIES` | Kingshot: how many allies to size the first batch for (same as `--allies`) | `1` |

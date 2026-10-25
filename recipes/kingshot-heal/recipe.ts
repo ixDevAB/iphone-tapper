@@ -1,5 +1,5 @@
 import { clock } from "../../src/clock.ts";
-import { brightText, crop, difference, type Image, loadImage } from "../../src/image.ts";
+import { difference, type Image, loadImage } from "../../src/image.ts";
 import type { Phone } from "../../src/phone.ts";
 import type { Recipe } from "../../src/recipes.ts";
 import { sleep } from "../../src/wda.ts";
@@ -9,7 +9,6 @@ const healButton = { x: 267, y: 643 };
 const cancelButton = { x: 75, y: 659 };
 const confirmButton = { x: 285, y: 535 };
 const infantryBox = { x: 302, y: 362 };
-const bannerRegion = { x: 0, y: 830, width: 1206, height: 120 };
 const otherBoxes = [{ x: 302, y: 441 }, { x: 302, y: 523 }];
 
 const ref = (file: string, x: number, y: number) => ({ img: loadImage(new URL(file, import.meta.url)), x, y });
@@ -61,15 +60,9 @@ const cancelHeal = async (phone: Phone) => {
 };
 
 const alliesIn = async (phone: Phone, screen: Image) => {
-  const banner = crop(screen, bannerRegion);
-  const reads = await Promise.all(
-    [banner, brightText(banner, 190, 18), brightText(banner, 180, 22)].map(async (img) =>
-      (await phone.ocr(img)).map((l) => l.text).join(" ")
-    ),
-  );
-  const counts = reads.flatMap((t) => t.match(/(\d+)\s*All/)?.[1] ?? []).map(Number).filter((n) => n > 0 && n < 100);
-  const best = counts.sort((a, b) => counts.filter((c) => c === b).length - counts.filter((c) => c === a).length)[0];
-  return best ?? (reads.some((t) => /Ally has help/i.test(t)) ? 1 : undefined);
+  const text = (await phone.ocr(screen)).map((l) => l.text).join(" ");
+  const count = text.match(/(\d+)\s*All[a-z1]{2,4}\b/i)?.[1];
+  return count ? Number(count) : /Ally has help/i.test(text) ? 1 : undefined;
 };
 
 const watchForAllies = async (phone: Phone, until: number): Promise<number | undefined> => {

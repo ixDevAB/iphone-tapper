@@ -9,7 +9,7 @@ struct Line: Codable {
   let height: Double
 }
 
-var accurateWorks = ProcessInfo.processInfo.environment["OCR_ACCURATE"] == "1"
+var accurateWorks = ProcessInfo.processInfo.environment["OCR_ACCURATE"] != "0"
 
 func recognize(_ image: CGImage, _ level: VNRequestTextRecognitionLevel) throws -> [VNRecognizedTextObservation] {
   let request = VNRecognizeTextRequest()

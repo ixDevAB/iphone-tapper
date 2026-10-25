@@ -8,6 +8,7 @@ const healButton = { x: 267, y: 643 };
 const cancelButton = { x: 75, y: 659 };
 const confirmButton = { x: 285, y: 535 };
 const infantryBox = { x: 302, y: 362 };
+const otherBoxes = [{ x: 302, y: 441 }, { x: 302, y: 523 }];
 const bannerRegion = { x: 0, y: 830, width: 1206, height: 120 };
 
 const ref = (file: string, x: number, y: number) => ({ img: loadImage(new URL(file, import.meta.url)), x, y });
@@ -24,11 +25,18 @@ const shows = (screen: Image, r: { img: Image; x: number; y: number }) => differ
 
 const visibleButton = (screen: Image) => shows(screen, refs.heal) ? "heal" : shows(screen, refs.help) ? "help" : undefined;
 
-const setBatch = async (phone: Phone, troops: number) => {
-  await phone.tap(infantryBox);
+const typeInto = async (phone: Phone, box: { x: number; y: number }, troops: number) => {
+  await phone.tap(box);
   await sleep(800);
   await phone.type([..."\b".repeat(6), ...String(troops), "\n"]);
   await sleep(800);
+};
+
+const setBatch = async (phone: Phone, troops: number) => {
+  await typeInto(phone, infantryBox, troops);
+  for (const box of otherBoxes) {
+    await typeInto(phone, box, 0).catch(() => undefined);
+  }
 };
 
 const waitFor = async (phone: Phone, r: { img: Image; x: number; y: number }, until: number): Promise<boolean> => {
@@ -74,8 +82,9 @@ export const kingshotHeal: Recipe = {
     const perAlly = Number(settings.env.TROOPS_PER_ALLY || 60);
     const allyTimeoutMs = Number(settings.env.ALLY_TIMEOUT_SECONDS || 240) * 1000;
     const cancelAfterMs = Number(settings.env.CANCEL_AFTER_SECONDS || 10) * 1000;
-    const checkEvery = Number(settings.env.CHECK_ALLIES_EVERY || 10);
+    const checkEvery = Number(settings.env.CHECK_ALLIES_EVERY || 20);
     const maxAllies = Number(settings.env.MAX_ALLIES || 20);
+    const holdMs = Number(settings.env.HOLD_AFTER_CANCEL_SECONDS || 300) * 1000;
 
     const first = await phone.screenshot();
     if (first.width !== screenWidth) throw new Error(`this recipe only works on an iPhone 17 Pro`);
@@ -88,8 +97,12 @@ export const kingshotHeal: Recipe = {
       healedAt: number;
       helpedAt?: number;
       helpAllies?: number;
+      holdUntil: number;
       idleSince: number;
     };
+
+    const allowed = (s: State, allies: number) =>
+      allies > maxAllies ? s.allies : Date.now() < s.holdUntil ? Math.min(allies, s.allies) : allies;
 
     const step = async (previous: State): Promise<string> => {
       const screen = await phone.screenshot();
@@ -97,7 +110,7 @@ export const kingshotHeal: Recipe = {
       const checkRound = previous.heals % checkEvery === 0;
       const seen = name === "heal" && checkRound ? await alliesIn(phone, screen) : undefined;
       if (seen && seen !== previous.allies) console.log(`${time()} ${seen} allies helped`);
-      const s = seen && seen <= maxAllies ? { ...previous, allies: seen } : previous;
+      const s = seen ? { ...previous, allies: allowed(previous, seen) } : previous;
 
       if (Date.now() - s.idleSince > settings.maxIdleMs) return `nothing to press for ${settings.maxIdleMs / 1000}s`;
 
@@ -108,7 +121,14 @@ export const kingshotHeal: Recipe = {
         console.log(`${time()} heal was sized for ${s.batchAllies} allies but did not finish, cancelling`);
         const cancelled = await cancelHeal(phone);
         if (cancelled) console.log(`${time()} cancelled, starting over for ${allies} ${allies === 1 ? "ally" : "allies"}`);
-        return step({ ...s, allies, helpedAt: undefined, helpAllies: undefined, idleSince: Date.now() });
+        return step({
+          ...s,
+          allies,
+          helpedAt: undefined,
+          helpAllies: undefined,
+          holdUntil: Date.now() + holdMs,
+          idleSince: Date.now(),
+        });
       }
 
       if (waited > allyTimeoutMs) return `allies stopped helping, heal did not finish within ${allyTimeoutMs / 1000}s`;
@@ -142,7 +162,7 @@ export const kingshotHeal: Recipe = {
         console.log(`${time()} help${allies ? `, ${allies} ${allies === 1 ? "ally" : "allies"} helped` : ""}`);
         return step({
           ...s,
-          allies: allies ?? s.allies,
+          allies: allies ? allowed(s, allies) : s.allies,
           helpAllies: allies,
           helpedAt: Date.now(),
           idleSince: Date.now(),
@@ -153,7 +173,15 @@ export const kingshotHeal: Recipe = {
       return step(s);
     };
 
-    const reason = await step({ heals: 0, batch: 0, allies: 1, batchAllies: 1, healedAt: 0, idleSince: Date.now() });
+    const reason = await step({
+      heals: 0,
+      batch: 0,
+      allies: 1,
+      batchAllies: 1,
+      healedAt: 0,
+      holdUntil: 0,
+      idleSince: Date.now(),
+    });
     console.log(`stopped: ${reason}`);
   },
 };

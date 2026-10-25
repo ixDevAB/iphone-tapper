@@ -24,6 +24,8 @@ If the button shows **Speed Up** or anything else, it waits until **Heal** comes
 
 **It cancels heals the allies cannot finish.** It remembers how many allies each heal was sized for. If fewer help and the heal has not finished 10 seconds after Help, it presses **Cancel healing** and **Confirm** (all resources are refunded) and starts over with a smaller batch.
 
+It only heals Infantry: when it changes the batch it also sets the Archers and Cavalry boxes to 0. After a cancel it keeps the smaller batch for 5 minutes before growing again.
+
 **It stops when allies stop helping.** At the smallest batch it waits up to 4 minutes for the heal timer, then stops by itself.
 
 ## What you need
@@ -130,8 +132,9 @@ Change a value, save, and start again.
 | `TROOPS_PER_ALLY` | Kingshot: how many troops one helping ally heals | `60` |
 | `ALLY_TIMEOUT_SECONDS` | Kingshot: at the smallest batch, stop when a heal has not finished this long after Help | `240` |
 | `CANCEL_AFTER_SECONDS` | Kingshot: cancel a bigger heal that has not finished this long after Help | `10` |
-| `CHECK_ALLIES_EVERY` | Kingshot: read how many allies helped every N rounds (lower is slower) | `10` |
+| `CHECK_ALLIES_EVERY` | Kingshot: read how many allies helped every N rounds (lower is slower) | `20` |
 | `MAX_ALLIES` | Kingshot: never size a batch for more allies than this | `20` |
+| `HOLD_AFTER_CANCEL_SECONDS` | Kingshot: after a cancel, do not grow the batch again for this long | `300` |
 | `DEVICE_UDID` | Pick a specific iPhone if several are connected | First connected iPhone |
 
 The recipes are made on an iPhone 17 Pro. On other models the buttons sit elsewhere and the recipe tells you it does not fit.

@@ -1,5 +1,5 @@
 import { clock } from "../../src/clock.ts";
-import { difference, type Image, loadImage } from "../../src/image.ts";
+import { brightText, crop, difference, type Image, loadImage } from "../../src/image.ts";
 import type { Phone } from "../../src/phone.ts";
 import type { Recipe } from "../../src/recipes.ts";
 import { sleep } from "../../src/wda.ts";
@@ -9,6 +9,7 @@ const healButton = { x: 267, y: 643 };
 const cancelButton = { x: 75, y: 659 };
 const confirmButton = { x: 285, y: 535 };
 const infantryBox = { x: 302, y: 362 };
+const bannerRegion = { x: 0, y: 830, width: 1206, height: 120 };
 const otherBoxes = [{ x: 302, y: 441 }, { x: 302, y: 523 }];
 
 const ref = (file: string, x: number, y: number) => ({ img: loadImage(new URL(file, import.meta.url)), x, y });
@@ -59,6 +60,24 @@ const cancelHeal = async (phone: Phone) => {
   return waitFor(phone, refs.heal, Date.now() + 5000);
 };
 
+const alliesIn = async (phone: Phone, screen: Image) => {
+  const banner = crop(screen, bannerRegion);
+  const reads = await Promise.all(
+    [banner, brightText(banner, 190, 18), brightText(banner, 180, 22)].map(async (img) =>
+      (await phone.ocr(img)).map((l) => l.text).join(" ")
+    ),
+  );
+  const counts = reads.flatMap((t) => t.match(/(\d+)\s*All/)?.[1] ?? []).map(Number).filter((n) => n > 0 && n < 100);
+  const best = counts.sort((a, b) => counts.filter((c) => c === b).length - counts.filter((c) => c === a).length)[0];
+  return best ?? (reads.some((t) => /Ally has help/i.test(t)) ? 1 : undefined);
+};
+
+const watchForAllies = async (phone: Phone, until: number): Promise<number | undefined> => {
+  if (Date.now() > until) return undefined;
+  const allies = await alliesIn(phone, await phone.screenshot());
+  return allies ?? watchForAllies(phone, until);
+};
+
 export const kingshotHeal: Recipe = {
   description:
     "Kingshot: presses Heal, then Help, grows the batch while allies finish every heal, and cancels a heal they cannot finish. Never presses Speed Up or Finish.",
@@ -72,6 +91,7 @@ export const kingshotHeal: Recipe = {
     const allyTimeoutMs = Number(settings.env.ALLY_TIMEOUT_SECONDS || 240) * 1000;
     const cancelAfterMs = Number(settings.env.CANCEL_AFTER_SECONDS || 10) * 1000;
     const growAfter = Number(settings.env.GROW_AFTER_ROUNDS || 10);
+    const checkEvery = Number(settings.env.CHECK_ALLIES_EVERY || 10);
     const startAllies = Number(settings.env.START_ALLIES || 1);
     const fastMs = Number(settings.env.FAST_FINISH_SECONDS || 3) * 1000;
     const maxAllies = Number(settings.env.MAX_ALLIES || 20);
@@ -149,8 +169,21 @@ export const kingshotHeal: Recipe = {
         await phone.tap(healButton);
         const batchAllies = Math.max(1, Math.round(s.batch / perAlly));
         console.log(`${time()} heal ${s.heals + 1} + help (${s.batch} troops for ${batchAllies} ${batchAllies === 1 ? "ally" : "allies"})`);
+        const helpedAt = Date.now();
+        const seen = (s.heals + 1) % checkEvery === 0 ? await watchForAllies(phone, Date.now() + 3000) : undefined;
+        const holding = Date.now() < s.holdUntil;
+        const allies = seen && seen <= maxAllies && !(holding && seen > s.allies) ? seen : s.allies;
+        if (seen) console.log(`${time()} ${seen} ${seen === 1 ? "ally" : "allies"} helped${allies === seen ? "" : ", holding after a cancel"}`);
         await sleep(settings.intervalMs);
-        return step({ ...s, heals: s.heals + 1, healedAt: Date.now(), batchAllies, helpedAt: Date.now(), idleSince: Date.now() });
+        return step({
+          ...s,
+          allies,
+          heals: s.heals + 1,
+          healedAt: Date.now(),
+          batchAllies,
+          helpedAt,
+          idleSince: Date.now(),
+        });
       }
 
       if (name === "help" && (!s.helpedAt || Date.now() - s.healedAt > 1500)) {

@@ -12,8 +12,34 @@ if (!recipe) {
   Deno.exit(1);
 }
 
-const alliesArg = Deno.args.indexOf("--allies");
-if (alliesArg >= 0) config.env.START_ALLIES = Deno.args[alliesArg + 1] ?? "1";
+const valueFlags: Record<string, string> = {
+  "--allies": "START_ALLIES",
+  "-a": "START_ALLIES",
+  "--start": "CALIBRATE_START",
+  "-s": "CALIBRATE_START",
+  "--tier": "CALIBRATE_TIER",
+  "-t": "CALIBRATE_TIER",
+  "--increment": "CALIBRATE_STEP",
+  "-i": "CALIBRATE_STEP",
+};
+const switches = ["--save", "--fresh", "--rebuild"];
+
+const unknown = Deno.args.filter((arg) => arg.startsWith("-") && !(arg in valueFlags) && !switches.includes(arg));
+if (unknown.length) {
+  console.log(`unknown argument ${unknown.join(" ")}, use ${[...Object.keys(valueFlags), ...switches].join(" ")}`);
+  Deno.exit(1);
+}
+
+Deno.args.forEach((arg, i) => {
+  const setting = valueFlags[arg];
+  const value = Deno.args[i + 1];
+  if (!setting) return;
+  if (value === undefined || value.startsWith("-")) {
+    console.log(`${arg} needs a value`);
+    Deno.exit(1);
+  }
+  config.env[setting] = value;
+});
 
 const phone = await findPhone(config.udid);
 console.log(`found ${phone.name}`);

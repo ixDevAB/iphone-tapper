@@ -3,6 +3,8 @@ import { decode, encode } from "fast-png";
 export type Image = ReturnType<typeof decode>;
 export type Region = { x: number; y: number; width: number; height: number };
 
+export const fromPng = (png: Uint8Array) => decode(png);
+
 export const loadImage = (url: URL) => decode(Deno.readFileSync(url));
 
 export const crop = (img: Image, { x, y, width, height }: Region): Image => ({

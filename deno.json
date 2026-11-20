@@ -1,6 +1,7 @@
 {
   "tasks": {
     "kingshot-heal": "deno run --allow-all src/start.ts kingshot-heal",
+    "kingshot-calibrate": "deno run --allow-all src/start.ts kingshot-calibrate",
     "rebuild": "deno run --allow-all src/start.ts kingshot-heal --rebuild"
   },
   "imports": {

@@ -30,9 +30,65 @@ Every 10th round it reads the "5 Allies have helped you" message and sizes the b
 
 **It cancels heals the allies cannot finish.** It remembers how many allies each heal was sized for. If fewer help and the heal has not finished 10 seconds after Help, it presses **Cancel healing** and **Confirm** (all resources are refunded) and starts over with a smaller batch.
 
-It only heals Infantry: when it changes the batch it also sets the Archers and Cavalry boxes to 0. After a cancel it keeps the smaller batch for 5 minutes before growing again.
+It only heals Infantry: when it changes the batch it also sets the Archers and Cavalry boxes to 0. After typing a new amount it reads the box back, and if the box shows something else it carries on with what the box shows. After a cancel it keeps the smaller batch for 5 minutes before growing again.
 
 **It stops when allies stop helping.** At the smallest batch it waits up to 4 minutes for the heal timer, then stops by itself.
+
+### Kingshot: measure troops per ally
+
+Use this to find your own `TROOPS_PER_ALLY_XI` and `TROOPS_PER_ALLY_X` instead of guessing them.
+
+1. Open the **Heal Injured** window when allies are online. The tier you want to measure must be one of the three troops at the top.
+2. Start it:
+   ```sh
+   deno task kingshot-calibrate
+   ```
+3. It heals 10 Infantry, then 20, then 30, and so on, pressing **Help** each time and reading how many allies helped:
+   ```
+   14:36:32 300 troops finished with 6 assists (50.0 per assist), one assist heals at least 50.0 and no upper limit yet
+   14:36:47 310 troops finished with 5 assists (62.0 per assist), one assist heals at least 62.0 and no upper limit yet
+   14:37:02 320 troops did not finish, cancelled with 4 assists (80.0 per assist), one assist heals at least 62.0 and less than 80.0
+   ```
+4. A heal only counts when the assists finish it within 3 seconds of Help (`FAST_FINISH_SECONDS`), the same rule the heal recipe uses. A heal that is still running after that is cancelled (all resources are refunded). A heal that finishes in time but only because the last few seconds ran out on its timer does not count either. From then on it picks amounts between "at least" and "less than" and keeps going until the two are less than one troop apart. If the very first heal does not finish, it goes back to your current setting times the number of assists, and from there down in steps until one finishes.
+5. Then it confirms the result: it heals that many troops per assist until 5 heals have finished with exactly the expected number of assists. If one of them does not finish, it lowers the value by 1 and starts the 5 over.
+6. It stops and prints the result, for example `TROOPS_PER_ALLY_XI=62`. The rounds may have been lucky, so it suggests one less (`61`) as the safer choice, and that is the value `--save` writes.
+7. Run it again with `--tier X` for the next tier.
+
+It starts small on purpose. To get to the limit faster, start higher, and use a smaller step for a more exact result:
+
+```sh
+deno task kingshot-calibrate --start 300 --increment 5
+```
+
+It measures tier XI unless you name another tier. It finds the first troop with that badge among the three at the top of the window, so you can measure X while XI troops are still injured:
+
+```sh
+deno task kingshot-calibrate --tier X --start 100
+```
+
+A reading that contradicts what already failed is thrown away: if 66 per assist failed, a later heal that seems to finish at 78 per assist means the assist count was read wrong.
+
+It remembers the best amount so far and the lowest amount that failed for each tier in `build/calibrate.json`, so you can stop it with Ctrl + C and the next run continues where it was. Add `--fresh` to forget that and start over.
+
+The short forms `-t`, `-s`, `-i` and `-a` work for `--tier`, `--start`, `--increment` and `--allies`. An argument it does not know stops it before anything is pressed.
+
+Add `--save` to write the safer value (the result minus one) to `.env`, so the heal recipe uses it from the next start:
+
+```sh
+deno task kingshot-calibrate --start 300 --save
+```
+
+It only presses **Heal** when the amount box shows the amount it typed. If the Heal button is not showing at the start, it waits up to 30 seconds for it.
+
+### Shortcuts with just
+
+If you have [just](https://just.systems) (it comes with `nix develop`), these do the same:
+
+```sh
+just heal --allies 5
+just heal-batchsize-calibrate --start 300 --increment 5 --save
+just rebuild
+```
 
 ## What you need
 
@@ -139,6 +195,14 @@ Change a value, save, and start again.
 | `TROOPS_PER_ALLY_XI` | Kingshot: how many tier XI troops one helping ally heals | `60` |
 | `TROOPS_PER_ALLY_X` | Kingshot: how many tier X troops one helping ally heals | `140` |
 | `TROOPS_PER_ALLY` | Kingshot: troops per ally for any other tier | `60` |
+| `CALIBRATE_START` | Kingshot: how many troops the first measuring heal uses (same as `--start`) | `10` |
+| `CALIBRATE_STEP` | Kingshot: how many troops each measuring heal adds (same as `--increment`) | `10` |
+| `CALIBRATE_TIER` | Kingshot: which tier to measure, `XI` or `X` (same as `--tier`) | `XI` |
+| `CALIBRATE_MAX` | Kingshot: stop measuring at this many troops | `2000` |
+| `CALIBRATE_MAX_ROUNDS` | Kingshot: give up measuring, and give up confirming, after this many heals | `40` |
+| `CALIBRATE_SETTLE_SECONDS` | Kingshot: keep reading the assist message this long after a heal finished | `2` |
+| `CALIBRATE_LEFT_SECONDS` | Kingshot: a heal with this many seconds or fewer left on its timer after the assists does not count as finished | `15` |
+| `CALIBRATE_CONFIRM` | Kingshot: how many finished heals confirm the result | `5` |
 | `ALLY_TIMEOUT_SECONDS` | Kingshot: at the smallest batch, stop when a heal has not finished this long after Help | `240` |
 | `CANCEL_AFTER_SECONDS` | Kingshot: cancel a bigger heal that has not finished this long after Help | `10` |
 | `START_ALLIES` | Kingshot: how many allies to size the first batch for (same as `--allies`) | `1` |

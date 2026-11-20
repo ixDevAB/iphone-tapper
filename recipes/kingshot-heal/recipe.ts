@@ -1,55 +1,75 @@
 import { clock } from "../../src/clock.ts";
-import { difference, type Image, loadImage } from "../../src/image.ts";
+import { difference, type Image, loadImage, toPng } from "../../src/image.ts";
+import type { TextLine } from "../../src/ocr.ts";
 import type { Phone } from "../../src/phone.ts";
 import type { Recipe } from "../../src/recipes.ts";
 import { sleep } from "../../src/wda.ts";
 
-const screenWidth = 1206;
-const healButton = { x: 267, y: 643 };
+export const screenWidth = 1206;
+export const healButton = { x: 267, y: 643 };
 const cancelButton = { x: 75, y: 659 };
 const confirmButton = { x: 285, y: 535 };
-const infantryBox = { x: 302, y: 362 };
+export const infantryBox = { x: 302, y: 362 };
 const otherBoxes = [{ x: 302, y: 441 }, { x: 302, y: 523 }];
 
 const ref = (file: string, x: number, y: number) => ({ img: loadImage(new URL(file, import.meta.url)), x, y });
-const refs = {
+export const refs = {
   heal: ref("heal.png", 786, 1919),
   help: ref("help.png", 790, 1935),
   cancel: ref("cancel.png", 150, 1925),
   confirm: ref("confirm.png", 745, 1570),
 };
-const tiers = [
+export const tiers = [
   { name: "XI", ref: ref("tier-xi.png", 203, 1098), setting: "TROOPS_PER_ALLY_XI", troops: 60 },
   { name: "X", ref: ref("tier-x.png", 203, 1098), setting: "TROOPS_PER_ALLY_X", troops: 140 },
 ];
 
 
-const shows = (screen: Image, r: { img: Image; x: number; y: number }) => difference(screen, r.img, r.x, r.y) < 12;
+export const shows = (screen: Image, r: { img: Image; x: number; y: number }) => difference(screen, r.img, r.x, r.y) < 12;
 
 const visibleButton = (screen: Image) => shows(screen, refs.heal) ? "heal" : shows(screen, refs.help) ? "help" : undefined;
 
-const typeInto = async (phone: Phone, box: { x: number; y: number }, troops: number) => {
+const buildDir = new URL("../../build/", import.meta.url);
+export const saveShot = (name: string, img: Image) => Deno.writeFile(new URL(name, buildDir), toPng(img)).catch(() => undefined);
+
+export const amountIn = (lines: TextLine[], down = 0) => {
+  const box = lines.find((l) => l.x > 0.65 && l.y > 0.39 + down && l.y < 0.43 + down && /^[\d,.\s]+$/.test(l.text));
+  return box ? Number(box.text.replace(/\D/g, "")) : undefined;
+};
+
+export const typeInto = async (phone: Phone, box: { x: number; y: number }, troops: number, shot?: string) => {
   await phone.tap(box);
   await sleep(800);
+  if (shot) await saveShot(shot, await phone.screenshot());
   await phone.type([..."\b".repeat(6), ...String(troops), "\n"]);
   await sleep(800);
 };
 
-const setBatch = async (phone: Phone, troops: number) => {
-  await typeInto(phone, infantryBox, troops);
+export const setBatch = async (phone: Phone, troops: number, shot?: string) => {
+  await typeInto(phone, infantryBox, troops, shot);
   for (const box of otherBoxes) {
     await typeInto(phone, box, 0).catch(() => undefined);
   }
 };
 
-const waitFor = async (phone: Phone, r: { img: Image; x: number; y: number }, until: number): Promise<boolean> => {
+export const waitFor = async (phone: Phone, r: { img: Image; x: number; y: number }, until: number): Promise<boolean> => {
   if (Date.now() > until) return false;
   if (shows(await phone.screenshot(), r)) return true;
   await sleep(300);
   return waitFor(phone, r, until);
 };
 
-const cancelHeal = async (phone: Phone) => {
+const setAndRead = async (phone: Phone, troops: number, tries: number): Promise<number | undefined> => {
+  await setBatch(phone, troops, tries <= 1 ? "batch-keyboard.png" : undefined);
+  const screen = await phone.screenshot();
+  const shown = amountIn(await phone.ocr(screen));
+  if (shown === troops || shown === undefined) return shown;
+  if (tries > 1) return setAndRead(phone, troops, tries - 1);
+  await saveShot("batch-not-set.png", screen);
+  return shown;
+};
+
+export const cancelHeal = async (phone: Phone) => {
   if (!(await waitFor(phone, refs.cancel, Date.now() + 2000))) return false;
   await phone.tap(cancelButton);
   if (!(await waitFor(phone, refs.confirm, Date.now() + 3000))) {
@@ -59,11 +79,13 @@ const cancelHeal = async (phone: Phone) => {
   return waitFor(phone, refs.heal, Date.now() + 5000);
 };
 
-const alliesIn = async (phone: Phone, screen: Image) => {
-  const text = (await phone.ocr(screen)).map((l) => l.text).join(" ");
+export const alliesFrom = (lines: { text: string }[]) => {
+  const text = lines.map((l) => l.text).join(" ");
   const count = text.match(/(\d+)\s*All[a-z1]{2,4}\b/i)?.[1];
   return count ? Number(count) : /Ally has help/i.test(text) ? 1 : undefined;
 };
+
+const alliesIn = async (phone: Phone, screen: Image) => alliesFrom(await phone.ocr(screen));
 
 const watchForAllies = async (phone: Phone, until: number): Promise<number | undefined> => {
   if (Date.now() > until) return undefined;
@@ -146,9 +168,14 @@ export const kingshotHeal: Recipe = {
       const target = s.allies * perAlly;
 
       if (name === "heal" && s.batch !== target) {
-        await setBatch(phone, target);
-        console.log(`${time()} batch set to ${target}`);
-        return step({ ...s, batch: target, perAlly, idleSince: Date.now() });
+        const shown = await setAndRead(phone, target, 2);
+        if (shown === undefined || shown === target) {
+          console.log(`${time()} batch set to ${target}${shown ? "" : " (could not read it back)"}`);
+          return step({ ...s, batch: target, perAlly, idleSince: Date.now() });
+        }
+        const allies = Math.max(1, Math.floor(shown / perAlly));
+        console.log(`${time()} could not set the batch to ${target}, the box shows ${shown}, continuing for ${allies} ${allies === 1 ? "ally" : "allies"} (screenshots in build/)`);
+        return step({ ...s, allies, batch: allies * perAlly, perAlly, holdUntil: Date.now() + holdMs, finished: 0, idleSince: Date.now() });
       }
 
       if (name === "heal" && Date.now() - s.healedAt < 500) {

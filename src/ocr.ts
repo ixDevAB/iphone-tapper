@@ -20,14 +20,16 @@ export const startOcr = () => {
   const writer = child.stdin.getWriter();
   const reader = child.stdout.pipeThrough(new TextDecoderStream()).pipeThrough(new TextLineStream()).getReader();
 
-  const read = async (img: Image) => {
+  const readPng = async (png: Uint8Array) => {
     const path = await Deno.makeTempFile({ suffix: ".png" });
-    await Deno.writeFile(path, toPng(img));
+    await Deno.writeFile(path, png);
     await writer.write(new TextEncoder().encode(`${path}\n`));
     const { value } = await reader.read();
     await Deno.remove(path);
     return JSON.parse(value ?? "[]") as TextLine[];
   };
 
-  return { read, stop: () => child.kill() };
+  const read = (img: Image) => readPng(toPng(img));
+
+  return { read, readPng, stop: () => child.kill() };
 };

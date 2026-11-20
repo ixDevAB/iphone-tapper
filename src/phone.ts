@@ -31,12 +31,14 @@ export const connectPhone = async (base: string) => {
   });
   const ocr = startOcr();
 
-  const screenshot = async () => {
+  const snap = async () => {
     const { value } = await fetch(`${base}/screenshot`, { signal: AbortSignal.timeout(20000) })
       .then((r) => r.json(), lost)
       .then(check);
-    return decode(decodeBase64(value));
+    return decodeBase64(value);
   };
+
+  const screenshot = async () => decode(await snap());
 
   const tap = (point: { x: number; y: number }) => post(`/session/${sessionId}/wda/tap`, point);
 
@@ -47,7 +49,7 @@ export const connectPhone = async (base: string) => {
     }
   };
 
-  return { screenshot, tap, type, ocr: ocr.read, close: ocr.stop };
+  return { screenshot, snap, tap, type, ocr: ocr.read, ocrPng: ocr.readPng, close: ocr.stop };
 };
 
 export type Phone = Awaited<ReturnType<typeof connectPhone>>;

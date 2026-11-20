@@ -142,6 +142,25 @@ Start it on the world map. It opens the pet skills and uses **Scent Mastery** an
 
 It prints everything it collected at the end, the same way as the intel task.
 
+### Terror rallies
+
+```sh
+deno task terror-hunt 3
+```
+
+Start it on the world map. For each rally it opens the search, picks **Terror** at level 8, presses **Search**, **Rally**, **Hold a rally** (with the rally time the game has selected) and **Deploy**. The number is how many rallies to hold; without it, it holds one.
+
+```sh
+deno task terror-hunt 3 --level 7
+deno task terror-hunt 2 --cav fahd --arch diana
+deno task terror-hunt 5 --storehouse --stamina 50
+```
+
+- `--level 7` hunts another level.
+- `--arch`, `--inf` and `--cav` put a hero in the rally by name. It opens **Select Heroes**, finds the hero by its picture and presses **Change**. The pictures are in `heroes`, named after the hero. A hero it has no picture of yet is looked up once through **View** and saved there. With heroes named, it waits for the rally to come back before it starts the next one, because the heroes have to be home again.
+- Without heroes it starts the next rally right away, as long as a march is free.
+- A rally costs 25 stamina. `--storehouse`, `--embrace` and `--stamina 50` refill it the same way as for the intel task; without them it stops when the stamina runs out.
+
 ### Shortcuts with just
 
 If you have [just](https://just.systems) (it comes with `nix develop`), these do the same:
@@ -151,6 +170,7 @@ just heal --allies 5
 just heal-batchsize-calibrate --start 300 --increment 5 --save
 just intel --pan --storehouse
 just collect-pet
+just terror-hunt 2 --cav fahd
 just rebuild
 ```
 
@@ -279,6 +299,8 @@ Change a value, save, and start again.
 | `INTEL_STAMINA_NEEDED` | Intel: refill or stop when the stamina is below this | `12` |
 | `INTEL_MARCH_WAIT_SECONDS` | Intel: how long to wait for a free march before skipping an animal | `60` |
 | `INTEL_COLLECT_WAIT_SECONDS` | Intel: how long to wait for marches before collecting the rewards | `30` |
+| `HUNT_LEVEL` | Terror: which level to search for (same as `--level`) | `8` |
+| `HUNT_RETURN_MINUTES` | Terror: how long to wait at most for a rally to come back | `20` |
 | `DEVICE_UDID` | Pick a specific iPhone if several are connected | First connected iPhone |
 
 The recipes are made on an iPhone 17 Pro. On other models the buttons sit elsewhere and the recipe tells you it does not fit.

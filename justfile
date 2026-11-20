@@ -13,5 +13,8 @@ intel *args:
 collect-pet *args:
     deno task collect-pet {{args}}
 
+terror-hunt *args:
+    deno task terror-hunt {{args}}
+
 rebuild:
     deno task rebuild

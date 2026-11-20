@@ -7,3 +7,4 @@ build/
 !recipes/**/*.png
 !docs/images/*.png
 !rewards/*.png
+!heroes/*.png

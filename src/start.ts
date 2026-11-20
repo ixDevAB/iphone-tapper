@@ -22,6 +22,10 @@ const valueFlags: Record<string, string> = {
   "--increment": "CALIBRATE_STEP",
   "-i": "CALIBRATE_STEP",
   "--stamina": "INTEL_STAMINA",
+  "--level": "HUNT_LEVEL",
+  "--arch": "HUNT_ARCH",
+  "--inf": "HUNT_INF",
+  "--cav": "HUNT_CAV",
 };
 const switches = ["--save", "--fresh", "--rebuild", "--pan", "--storehouse", "--embrace"];
 
@@ -41,6 +45,9 @@ Deno.args.forEach((arg, i) => {
   }
   config.env[setting] = value;
 });
+
+const amount = Deno.args.slice(1).find((arg, i, all) => /^\d+$/.test(arg) && !(all[i - 1] in valueFlags));
+if (amount) config.env.AMOUNT = amount;
 
 const phone = await findPhone(config.udid);
 console.log(`found ${phone.name}`);

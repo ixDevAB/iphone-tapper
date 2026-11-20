@@ -59,8 +59,7 @@ export const loadLibrary = (dir: URL): Library =>
 
 const shifts = [-12, -9, -6, -3, 0, 3, 6, 9, 12];
 
-export const nameOf = (img: Image, tile: Tile, library: Library) => {
-  const at = iconAt(tile);
+export const matchAt = (img: Image, at: { x: number; y: number }, library: Library) => {
   const closest = (dxs: number[], dys: number[]) =>
     library
       .map((entry) => ({ name: entry.name, d: Math.min(...dxs.flatMap((dx) => dys.map((dy) => difference(img, entry.img, at.x + dx, at.y + dy)))) }))
@@ -70,6 +69,8 @@ export const nameOf = (img: Image, tile: Tile, library: Library) => {
   const shifted = closest(shifts, shifts);
   return shifted && shifted.d < 16 ? shifted.name : undefined;
 };
+
+export const nameOf = (img: Image, tile: Tile, library: Library) => matchAt(img, iconAt(tile), library);
 
 export const amountOf = (text: string) => {
   const m = text.replaceAll(",", "").match(/(\d+(?:\.\d+)?)\s*([KMB])?/i);

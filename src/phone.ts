@@ -42,6 +42,9 @@ export const connectPhone = async (base: string) => {
 
   const tap = (point: { x: number; y: number }) => post(`/session/${sessionId}/wda/tap`, point);
 
+  const drag = (from: { x: number; y: number }, to: { x: number; y: number }, seconds = 0.6) =>
+    post(`/session/${sessionId}/wda/dragfromtoforduration`, { fromX: from.x, fromY: from.y, toX: to.x, toY: to.y, duration: seconds });
+
   const type = async (keys: string[]) => {
     for (const key of keys) {
       await post(`/session/${sessionId}/wda/keys`, { value: [key] });
@@ -49,7 +52,7 @@ export const connectPhone = async (base: string) => {
     }
   };
 
-  return { screenshot, snap, tap, type, ocr: ocr.read, ocrPng: ocr.readPng, close: ocr.stop };
+  return { screenshot, snap, tap, drag, type, ocr: ocr.read, ocrPng: ocr.readPng, close: ocr.stop };
 };
 
 export type Phone = Awaited<ReturnType<typeof connectPhone>>;

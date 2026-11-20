@@ -6,7 +6,11 @@ const bin = `${root}build/ocr`;
 
 export type TextLine = { text: string; x: number; y: number; width: number; height: number };
 
-export const ensureOcr = async () => {
+const mode = { accurate: Deno.env.get("OCR_ACCURATE") !== "0" };
+const probeImage = `${root}docs/images/heal.png`;
+const probeMs = Number(Deno.env.get("OCR_ACCURATE_SECONDS") || 8) * 1000;
+
+const build = async () => {
   const built = await Deno.stat(bin).then((s) => s.mtime?.getTime() ?? 0, () => 0);
   const source = (await Deno.stat(`${root}src/ocr.swift`)).mtime?.getTime() ?? 0;
   if (built > source) return;
@@ -15,8 +19,29 @@ export const ensureOcr = async () => {
   if (code !== 0) throw new Error("could not build the text reader, is xcode installed?");
 };
 
+const accurateAnswers = async () => {
+  const child = new Deno.Command(bin, { stdin: "piped", stdout: "piped", stderr: "null" }).spawn();
+  const writer = child.stdin.getWriter();
+  await writer.write(new TextEncoder().encode(`${probeImage}\n`));
+  const reader = child.stdout.getReader();
+  const timer = Promise.withResolvers<boolean>();
+  const timeout = setTimeout(() => timer.resolve(false), probeMs);
+  const answered = await Promise.race([reader.read().then((r) => !r.done), timer.promise]);
+  clearTimeout(timeout);
+  child.kill();
+  await child.status.catch(() => undefined);
+  return answered;
+};
+
+export const ensureOcr = async () => {
+  await build();
+  if (!mode.accurate || await accurateAnswers()) return;
+  mode.accurate = false;
+  console.log("accurate text recognition is not answering on this mac right now, using fast recognition, so amounts and ally counts may not be readable");
+};
+
 export const startOcr = () => {
-  const child = new Deno.Command(bin, { stdin: "piped", stdout: "piped" }).spawn();
+  const child = new Deno.Command(bin, { stdin: "piped", stdout: "piped", env: mode.accurate ? {} : { OCR_ACCURATE: "0" } }).spawn();
   const writer = child.stdin.getWriter();
   const reader = child.stdout.pipeThrough(new TextDecoderStream()).pipeThrough(new TextLineStream()).getReader();
 

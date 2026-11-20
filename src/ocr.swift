@@ -15,6 +15,7 @@ func recognize(_ image: CGImage, _ level: VNRequestTextRecognitionLevel) throws 
   let request = VNRecognizeTextRequest()
   request.recognitionLevel = level
   request.usesLanguageCorrection = false
+  request.usesCPUOnly = true
   try VNImageRequestHandler(cgImage: image).perform([request])
   return request.results ?? []
 }

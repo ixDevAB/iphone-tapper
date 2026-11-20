@@ -8,7 +8,7 @@ const closeDialog = { x: 373, y: 175 };
 export type Refills = { storehouse: boolean; embrace: boolean; meatBudget: number };
 
 export const refillsFrom = (env: Record<string, string>): Refills => ({
-  storehouse: Deno.args.includes("--storehouse"),
+  storehouse: Deno.args.includes("--storehouse") || Deno.args.includes("--gourmet"),
   embrace: Deno.args.includes("--embrace"),
   meatBudget: Math.floor(Number(env.INTEL_STAMINA || 0) / 10),
 });

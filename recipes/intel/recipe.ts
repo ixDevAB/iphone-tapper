@@ -12,7 +12,7 @@ const panButton = { x: 32, y: 170 };
 const staminaPlus = { x: 385, y: 75 };
 const closeDialog = { x: 373, y: 175 };
 const backArrow = { x: 30, y: 77 };
-const pan = { img: loadImage(new URL("pan.png", import.meta.url)), x: 70, y: 478 };
+const pan = { img: loadImage(new URL("../../assets/intel/pan.png", import.meta.url)), x: 70, y: 478 };
 const buildDir = new URL("../../build/", import.meta.url);
 
 const actions = [
@@ -39,7 +39,7 @@ export const intel: Recipe = {
   run: async (phone, settings) => {
     const time = clock(settings.env.CLOCK);
     const usePan = Deno.args.includes("--pan");
-    const useStorehouse = Deno.args.includes("--storehouse");
+    const useStorehouse = Deno.args.includes("--storehouse") || Deno.args.includes("--gourmet");
     const useEmbrace = Deno.args.includes("--embrace");
     const meatBudget = Math.floor(Number(settings.env.INTEL_STAMINA || 0) / 10);
     const needed = Number(settings.env.INTEL_STAMINA_NEEDED || 12);

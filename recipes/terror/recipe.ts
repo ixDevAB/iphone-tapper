@@ -15,7 +15,7 @@ const backArrow = { x: 30, y: 77 };
 const closeHeroes = { x: 359, y: 177 };
 const tileColumns = [79, 159, 240, 320];
 const buildDir = new URL("../../build/", import.meta.url);
-const heroesDir = new URL("../../heroes/", import.meta.url);
+const heroesDir = new URL("../../assets/heroes/", import.meta.url);
 const faceAt = (spot: { x: number; y: number }) => ({ x: spot.x * 3 - 55, y: Math.round(spot.y * 3) - 29, width: 110, height: 70 });
 
 const slots = [

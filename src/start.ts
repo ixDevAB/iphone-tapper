@@ -27,7 +27,7 @@ const valueFlags: Record<string, string> = {
   "--inf": "HUNT_INF",
   "--cav": "HUNT_CAV",
 };
-const switches = ["--save", "--fresh", "--rebuild", "--pan", "--storehouse", "--embrace"];
+const switches = ["--save", "--fresh", "--rebuild", "--pan", "--storehouse", "--gourmet", "--embrace", "--buy-vip"];
 
 const unknown = Deno.args.filter((arg) => arg.startsWith("-") && !(arg in valueFlags) && !switches.includes(arg));
 if (unknown.length) {

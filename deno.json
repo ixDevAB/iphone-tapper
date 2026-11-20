@@ -5,6 +5,11 @@
     "intel": "deno run --allow-all src/start.ts intel",
     "collect-pet": "deno run --allow-all src/start.ts collect-pet",
     "terror-hunt": "deno run --allow-all src/start.ts terror-hunt",
+    "claim-mail": "deno run --allow-all src/start.ts claim-mail",
+    "claim-alliance": "deno run --allow-all src/start.ts claim-alliance",
+    "recruit": "deno run --allow-all src/start.ts recruit",
+    "morning": "deno run --allow-all src/start.ts morning",
+    "shop": "deno run --allow-all src/start.ts shop",
     "rebuild": "deno run --allow-all src/start.ts heal --rebuild"
   },
   "imports": {

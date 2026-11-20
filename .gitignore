@@ -4,7 +4,5 @@ build/
 *.log
 *.png
 .DS_Store
-!recipes/**/*.png
+!assets/**/*.png
 !docs/images/*.png
-!rewards/*.png
-!heroes/*.png

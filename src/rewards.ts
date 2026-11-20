@@ -3,7 +3,7 @@ import { countOn } from "./count.ts";
 import type { Phone } from "./phone.ts";
 import { sleep } from "./wda.ts";
 
-const rewardsDir = new URL("../rewards/", import.meta.url);
+const rewardsDir = new URL("../assets/rewards/", import.meta.url);
 
 const icon = { width: 96, height: 84, up: 62 };
 

@@ -12,7 +12,7 @@ It looks at the phone screen before every tap and only presses the buttons the r
 deno task heal
 ```
 
-Open the **Heal Injured** window in Kingshot and start the recipe. It presses **Heal**, then **Help**, then **Heal** again, until all your troops are healed.
+Start the recipe on the world map or with the **Heal Injured** window open. If the window is not open, it presses the green injured button (the plus with a percentage) to open it. It presses **Heal**, then **Help**, then **Heal** again, until all your troops are healed.
 
 | It presses **Heal** | Then **Help** |
 | --- | --- |
@@ -122,10 +122,10 @@ rewards:
   250 unknown-02
 ```
 
-It recognises rewards by their picture. The pictures are in `rewards` and the file name is the name it prints. A reward it has not seen before is saved there as `unknown-28.png` and so on: rename the file to name it.
+It recognises rewards by their picture. The pictures are in `assets/rewards` and the file name is the name it prints. A reward it has not seen before is saved there as `unknown-28.png` and so on: rename the file to name it.
 
 ```sh
-open rewards
+open assets/rewards
 ```
 
 ### Collect from the pets
@@ -157,9 +157,67 @@ deno task terror-hunt 5 --storehouse --stamina 50
 ```
 
 - `--level 7` hunts another level.
-- `--arch`, `--inf` and `--cav` put a hero in the rally by name. It opens **Select Heroes**, finds the hero by its picture and presses **Change**. The pictures are in `heroes`, named after the hero. A hero it has no picture of yet is looked up once through **View** and saved there. With heroes named, it waits for the rally to come back before it starts the next one, because the heroes have to be home again.
+- `--arch`, `--inf` and `--cav` put a hero in the rally by name. It opens **Select Heroes**, finds the hero by its picture and presses **Change**. The pictures are in `assets/heroes`, named after the hero. A hero it has no picture of yet is looked up once through **View** and saved there. With heroes named, it waits for the rally to come back before it starts the next one, because the heroes have to be home again.
 - Without heroes it starts the next rally right away, as long as a march is free.
 - A rally costs 25 stamina. `--storehouse`, `--embrace` and `--stamina 50` refill it the same way as for the intel task; without them it stops when the stamina runs out.
+
+### Claim the mail
+
+```sh
+deno task claim-mail
+```
+
+Start it on the world map. It opens the mail, goes through the five tabs (Wars, Alliance, System, Reports, Starred) and presses **Read & Claim All** on each. It never presses **Delete Read**. At the end it prints what it claimed.
+
+### Claim from the alliance
+
+```sh
+deno task claim-alliance
+```
+
+Start it on the world map. It opens **Alliance**, then:
+
+- **Chests**: presses **Claim All** on the Alliance Gift tab and on the Loot Chest tab
+- **Tech**: opens **Covenant-Making** and presses the bread **Contribute** button until the attempts are down to 0
+
+It never presses the gem Contribute button or **Go**. At the end it prints what it claimed.
+
+### Free hero recruits
+
+```sh
+deno task recruit
+```
+
+Start it on the world map. It opens **Heroes** and **Recruit Heroes** and presses every green **Free** recruit button. It never presses the yellow buttons that cost keys. When nothing is free it tells you how long until the next one.
+
+### Morning round
+
+```sh
+deno task morning --pan --gourmet --embrace
+```
+
+Start it on the world map. It runs seven tasks one after the other and returns to the world map between them:
+
+1. the intel missions (`--pan`, `--gourmet`, `--embrace` and `--stamina 50` work as for the intel task; `--gourmet` is the same as `--storehouse`)
+2. two Terror rallies with Diana as archer and Fahd as cavalry (change with a number, `--arch`, `--cav`, `--inf` and `--level`)
+3. all the mail
+4. the alliance chests and contributions
+5. the Nomadic Merchant, including the VIP XP item for gems
+6. the free hero recruits
+7. the pet skills, pet adventures and ally treasure
+
+If one task stops early, the round carries on with the next one.
+
+### Nomadic Merchant
+
+```sh
+deno task shop
+deno task shop --buy-vip
+```
+
+Start it on the world map. It opens **Shop** and buys every Nomadic Merchant item that costs resources (bread, wood, stone, iron). When only gem items are left it presses **Free Refresh** and starts over, until there is no free refresh left.
+
+It never buys with gems, with one exception: with `--buy-vip` it also buys the VIP XP item (the yellow V). A gem purchase opens a **Buy** window, and it only confirms when that window says VIP XP.
 
 ### Shortcuts with just
 
@@ -171,6 +229,11 @@ just heal-batchsize-calibrate --start 300 --increment 5 --save
 just intel --pan --storehouse
 just collect-pet
 just terror-hunt 2 --cav fahd
+just claim-mail
+just claim-alliance
+just recruit
+just morning --pan --gourmet --embrace
+just shop --buy-vip
 just rebuild
 ```
 
@@ -301,6 +364,7 @@ Change a value, save, and start again.
 | `INTEL_COLLECT_WAIT_SECONDS` | Intel: how long to wait for marches before collecting the rewards | `30` |
 | `HUNT_LEVEL` | Terror: which level to search for (same as `--level`) | `8` |
 | `HUNT_RETURN_MINUTES` | Terror: how long to wait at most for a rally to come back | `20` |
+| `SHOP_MAX_BUYS` | Shop: stop after this many purchases in one run | `200` |
 | `DEVICE_UDID` | Pick a specific iPhone if several are connected | First connected iPhone |
 
 The recipes are made on an iPhone 17 Pro. On other models the buttons sit elsewhere and the recipe tells you it does not fit.

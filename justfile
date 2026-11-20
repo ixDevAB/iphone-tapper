@@ -16,5 +16,20 @@ collect-pet *args:
 terror-hunt *args:
     deno task terror-hunt {{args}}
 
+claim-mail *args:
+    deno task claim-mail {{args}}
+
+claim-alliance *args:
+    deno task claim-alliance {{args}}
+
+recruit *args:
+    deno task recruit {{args}}
+
+morning *args:
+    deno task morning {{args}}
+
+shop *args:
+    deno task shop {{args}}
+
 rebuild:
     deno task rebuild

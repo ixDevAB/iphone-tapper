@@ -49,9 +49,9 @@ const timerIn = (lines: TextLine[]) =>
 type Search = { rounds: number; low: number; high?: number; assists: number; reason: string };
 type Check = { rounds: number; perAlly: number; passed: number; assists: number; reason: string };
 
-export const kingshotCalibrate: Recipe = {
+export const calibrate: Recipe = {
   description:
-    "Kingshot: finds how many troops of a tier one helping ally heals. Heals 10, then 20, then 30, narrows in on the limit, then confirms it with 5 heals. Heals that do not finish are cancelled.",
+    "Finds how many troops of a tier one helping ally heals. Heals 10, then 20, then 30, narrows in on the limit, then confirms it with 5 heals. Heals that do not finish are cancelled.",
   run: async (phone, settings) => {
     const time = clock(settings.env.CLOCK);
     const start = Number(settings.env.CALIBRATE_START || 10);

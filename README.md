@@ -6,10 +6,10 @@ It looks at the phone screen before every tap and only presses the buttons the r
 
 ## Recipes
 
-### Kingshot: heal troops
+### Heal troops
 
 ```sh
-deno task kingshot-heal
+deno task heal
 ```
 
 Open the **Heal Injured** window in Kingshot and start the recipe. It presses **Heal**, then **Help**, then **Heal** again, until all your troops are healed.
@@ -23,7 +23,7 @@ If the button shows **Speed Up** or anything else, it waits until **Heal** comes
 **It heals more when more allies help.** It starts with 60 Infantry per round, or more if you tell it how many allies are online:
 
 ```sh
-deno task kingshot-heal --allies 5
+deno task heal --allies 5
 ```
 
 On the first round and every 10th round after that it reads the "5 Allies have helped you" message and sizes the batch to that. When 10 heals in a row finish within 3 seconds of Help, it also tries one ally more. Slower heals mean the allies are at their limit, so it stops growing. It reads the tier badge (XI or X) on the top troop and uses the right amount per ally: 60 for XI and 140 for X. How much one ally heals is different for every player, so change `TROOPS_PER_ALLY_XI` and `TROOPS_PER_ALLY_X` in the [settings](#settings) to match yours.
@@ -34,14 +34,14 @@ It only heals Infantry: when it changes the batch it also sets the Archers and C
 
 **It stops when allies stop helping.** At the smallest batch it waits up to 4 minutes for the heal timer, then stops by itself.
 
-### Kingshot: measure troops per ally
+### Measure troops per ally
 
 Use this to find your own `TROOPS_PER_ALLY_XI` and `TROOPS_PER_ALLY_X` instead of guessing them.
 
 1. Open the **Heal Injured** window when allies are online. The tier you want to measure must be one of the three troops at the top.
 2. Start it:
    ```sh
-   deno task kingshot-calibrate
+   deno task calibrate
    ```
 3. It heals 10 Infantry, then 20, then 30, and so on, pressing **Help** each time and reading how many allies helped:
    ```
@@ -57,13 +57,13 @@ Use this to find your own `TROOPS_PER_ALLY_XI` and `TROOPS_PER_ALLY_X` instead o
 It starts small on purpose. To get to the limit faster, start higher, and use a smaller step for a more exact result:
 
 ```sh
-deno task kingshot-calibrate --start 300 --increment 5
+deno task calibrate --start 300 --increment 5
 ```
 
 It measures tier XI unless you name another tier. It finds the first troop with that badge among the three at the top of the window, so you can measure X while XI troops are still injured:
 
 ```sh
-deno task kingshot-calibrate --tier X --start 100
+deno task calibrate --tier X --start 100
 ```
 
 A reading that contradicts what already failed is thrown away: if 66 per assist failed, a later heal that seems to finish at 78 per assist means the assist count was read wrong.
@@ -75,10 +75,72 @@ The short forms `-t`, `-s`, `-i` and `-a` work for `--tier`, `--start`, `--incre
 Add `--save` to write the safer value (the result minus one) to `.env`, so the heal recipe uses it from the next start:
 
 ```sh
-deno task kingshot-calibrate --start 300 --save
+deno task calibrate --start 300 --save
 ```
 
 It only presses **Heal** when the amount box shows the amount it typed. If the Heal button is not showing at the start, it waits up to 30 seconds for it.
+
+### Intel missions
+
+```sh
+deno task intel
+```
+
+Open the world map (or the Intel Mission screen) and start it. For every marker it presses **View** and then does what the mission needs:
+
+| Marker | What it presses |
+| --- | --- |
+| Tent | **Rescue** |
+| Animal | **Attack**, then **Deploy** with the troops the game suggests |
+| Fight | **Conquer**, then **Fight** with the squad already set |
+
+It does not wait for marches: it sends one and takes the next marker right away. When no marker is left it waits a moment for the marches, presses **Claim All**, and carries on with any new markers that show up. It also collects before it stops for lack of stamina.
+
+Animals need a free march. When the march list on the world map shows all marches in use (for example 6/6), it waits up to a minute for one to come back, and skips that animal if none does. Tents and fights do not need a march.
+
+```sh
+deno task intel --pan
+deno task intel --storehouse --embrace --stamina 50
+```
+
+- `--pan` presses the Pan skill once at the start, if it is available.
+- Without more arguments it stops when the stamina is below 12.
+- `--storehouse` lets it claim the Gourmet Feast (150 stamina) when it runs out.
+- `--embrace` lets it claim the Comforting Embrace (50 stamina).
+- `--stamina 50` lets it gain up to 50 stamina from meat, 10 at a time.
+
+It never presses **Buy & Use** or anything else that costs gems.
+
+When it stops it prints what it did and what it collected:
+
+```
+intel done: 3 blue animal, 2 gold fight, 1 purple tent
+rewards:
+  15,000 hero xp
+  3 epic conquest skill book
+  2 shards of edwin
+  250 unknown-02
+```
+
+It recognises rewards by their picture. The pictures are in `rewards` and the file name is the name it prints. A reward it has not seen before is saved there as `unknown-28.png` and so on: rename the file to name it.
+
+```sh
+open rewards
+```
+
+### Collect from the pets
+
+```sh
+deno task collect-pet
+```
+
+Start it on the world map. It opens the pet skills and uses **Scent Mastery** and **Gift of the King** when they are ready, or tells you how long their cooldown still is. Then it goes to **Beast Cage** and **Adventure**, where it:
+
+- presses **Claim All** when adventures have finished
+- presses **Hunt All** to send the pets out again (each hunt costs 10 stamina, so it stops hunting when the game says there is not enough)
+- opens **Ally Treasure** when it has a red bubble, presses every **Share**, and presses **Claim** under Alliance Shares while claims are left for today
+
+It prints everything it collected at the end, the same way as the intel task.
 
 ### Shortcuts with just
 
@@ -87,6 +149,8 @@ If you have [just](https://just.systems) (it comes with `nix develop`), these do
 ```sh
 just heal --allies 5
 just heal-batchsize-calibrate --start 300 --increment 5 --save
+just intel --pan --storehouse
+just collect-pet
 just rebuild
 ```
 
@@ -131,7 +195,7 @@ Do this once.
 
 6. **Start a recipe**
    ```sh
-   deno task kingshot-heal
+   deno task heal
    ```
    The first start installs a helper app on your phone. This takes a few minutes. After that, starting is quick.
 
@@ -159,7 +223,7 @@ Developer Mode lets your Mac install the helper app on the phone. You only turn 
    ```sh
    cd iphone-tapper
    nix develop
-   deno task kingshot-heal
+   deno task heal
    ```
 4. Leave the phone alone. You will see "Automation Running" on the phone, that is normal.
 5. Press **Ctrl + C** in Terminal to stop. It also stops by itself when there has been nothing to press for 10 minutes.
@@ -192,25 +256,29 @@ Change a value, save, and start again.
 | `INTERVAL_MS` | Pause after each tap, in milliseconds | `0` |
 | `MAX_IDLE_SECONDS` | Stop when there has been nothing to press this long | `600` |
 | `CLOCK` | Time format in the output: `24h` (14:52:08) or `12h` (2:52:08 PM) | `24h` |
-| `TROOPS_PER_ALLY_XI` | Kingshot: how many tier XI troops one helping ally heals | `60` |
-| `TROOPS_PER_ALLY_X` | Kingshot: how many tier X troops one helping ally heals | `140` |
-| `TROOPS_PER_ALLY` | Kingshot: troops per ally for any other tier | `60` |
-| `CALIBRATE_START` | Kingshot: how many troops the first measuring heal uses (same as `--start`) | `10` |
-| `CALIBRATE_STEP` | Kingshot: how many troops each measuring heal adds (same as `--increment`) | `10` |
-| `CALIBRATE_TIER` | Kingshot: which tier to measure, `XI` or `X` (same as `--tier`) | `XI` |
-| `CALIBRATE_MAX` | Kingshot: stop measuring at this many troops | `2000` |
-| `CALIBRATE_MAX_ROUNDS` | Kingshot: give up measuring, and give up confirming, after this many heals | `40` |
-| `CALIBRATE_SETTLE_SECONDS` | Kingshot: keep reading the assist message this long after a heal finished | `2` |
-| `CALIBRATE_LEFT_SECONDS` | Kingshot: a heal with this many seconds or fewer left on its timer after the assists does not count as finished | `15` |
-| `CALIBRATE_CONFIRM` | Kingshot: how many finished heals confirm the result | `5` |
-| `ALLY_TIMEOUT_SECONDS` | Kingshot: at the smallest batch, stop when a heal has not finished this long after Help | `240` |
-| `CANCEL_AFTER_SECONDS` | Kingshot: cancel a bigger heal that has not finished this long after Help | `10` |
-| `START_ALLIES` | Kingshot: how many allies to size the first batch for (same as `--allies`) | `1` |
-| `GROW_AFTER_ROUNDS` | Kingshot: try one ally more after this many heals in a row finished | `10` |
-| `CHECK_ALLIES_EVERY` | Kingshot: read how many allies helped on the first round and then every N rounds | `10` |
-| `FAST_FINISH_SECONDS` | Kingshot: a heal only counts toward growing if it finished this fast after Help | `3` |
-| `MAX_ALLIES` | Kingshot: never size a batch for more allies than this | `20` |
-| `HOLD_AFTER_CANCEL_SECONDS` | Kingshot: after a cancel, do not grow the batch again for this long | `300` |
+| `TROOPS_PER_ALLY_XI` | Heal: how many tier XI troops one helping ally heals | `60` |
+| `TROOPS_PER_ALLY_X` | Heal: how many tier X troops one helping ally heals | `140` |
+| `TROOPS_PER_ALLY` | Heal: troops per ally for any other tier | `60` |
+| `CALIBRATE_START` | Heal: how many troops the first measuring heal uses (same as `--start`) | `10` |
+| `CALIBRATE_STEP` | Heal: how many troops each measuring heal adds (same as `--increment`) | `10` |
+| `CALIBRATE_TIER` | Heal: which tier to measure, `XI` or `X` (same as `--tier`) | `XI` |
+| `CALIBRATE_MAX` | Heal: stop measuring at this many troops | `2000` |
+| `CALIBRATE_MAX_ROUNDS` | Heal: give up measuring, and give up confirming, after this many heals | `40` |
+| `CALIBRATE_SETTLE_SECONDS` | Heal: keep reading the assist message this long after a heal finished | `2` |
+| `CALIBRATE_LEFT_SECONDS` | Heal: a heal with this many seconds or fewer left on its timer after the assists does not count as finished | `15` |
+| `CALIBRATE_CONFIRM` | Heal: how many finished heals confirm the result | `5` |
+| `ALLY_TIMEOUT_SECONDS` | Heal: at the smallest batch, stop when a heal has not finished this long after Help | `240` |
+| `CANCEL_AFTER_SECONDS` | Heal: cancel a bigger heal that has not finished this long after Help | `10` |
+| `START_ALLIES` | Heal: how many allies to size the first batch for (same as `--allies`) | `1` |
+| `GROW_AFTER_ROUNDS` | Heal: try one ally more after this many heals in a row finished | `10` |
+| `CHECK_ALLIES_EVERY` | Heal: read how many allies helped on the first round and then every N rounds | `10` |
+| `FAST_FINISH_SECONDS` | Heal: a heal only counts toward growing if it finished this fast after Help | `3` |
+| `MAX_ALLIES` | Heal: never size a batch for more allies than this | `20` |
+| `HOLD_AFTER_CANCEL_SECONDS` | Heal: after a cancel, do not grow the batch again for this long | `300` |
+| `INTEL_STAMINA` | Intel: how much stamina it may gain from meat (same as `--stamina`) | `0` |
+| `INTEL_STAMINA_NEEDED` | Intel: refill or stop when the stamina is below this | `12` |
+| `INTEL_MARCH_WAIT_SECONDS` | Intel: how long to wait for a free march before skipping an animal | `60` |
+| `INTEL_COLLECT_WAIT_SECONDS` | Intel: how long to wait for marches before collecting the rewards | `30` |
 | `DEVICE_UDID` | Pick a specific iPhone if several are connected | First connected iPhone |
 
 The recipes are made on an iPhone 17 Pro. On other models the buttons sit elsewhere and the recipe tells you it does not fit.

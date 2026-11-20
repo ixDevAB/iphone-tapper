@@ -93,9 +93,9 @@ const watchForAllies = async (phone: Phone, until: number): Promise<number | und
   return allies ?? watchForAllies(phone, until);
 };
 
-export const kingshotHeal: Recipe = {
+export const heal: Recipe = {
   description:
-    "Kingshot: presses Heal, then Help, grows the batch while allies finish every heal, and cancels a heal they cannot finish. Never presses Speed Up or Finish.",
+    "Presses Heal, then Help, grows the batch while allies finish every heal, and cancels a heal they cannot finish. Never presses Speed Up or Finish.",
   run: async (phone, settings) => {
     const time = clock(settings.env.CLOCK);
     const fallbackPerAlly = Number(settings.env.TROOPS_PER_ALLY || 60);
@@ -167,15 +167,17 @@ export const kingshotHeal: Recipe = {
 
       const perAlly = name === "heal" ? perAllyOn(screen, s.perAlly) : s.perAlly;
       const target = s.allies * perAlly;
+      const tier = name === "heal" ? tiers.find((t) => shows(screen, t.ref))?.name : undefined;
+      const kind = tier ? `${tier} troops` : "troops";
 
       if (name === "heal" && s.batch !== target) {
         const shown = await setAndRead(phone, target, 2);
         if (shown === undefined || shown === target) {
-          console.log(`${time()} batch set to ${target}${shown ? "" : " (could not read it back)"}`);
+          console.log(`${time()} batch set to ${target} ${kind}${shown ? "" : " (could not read it back)"}`);
           return step({ ...s, batch: target, perAlly, idleSince: Date.now() });
         }
         const allies = Math.max(1, Math.floor(shown / perAlly));
-        console.log(`${time()} could not set the batch to ${target}, the box shows ${shown}, continuing for ${allies} ${allies === 1 ? "ally" : "allies"} (screenshots in build/)`);
+        console.log(`${time()} could not set the batch to ${target} ${kind}, the box shows ${shown}, continuing for ${allies} ${allies === 1 ? "ally" : "allies"} (screenshots in build/)`);
         return step({ ...s, allies, batch: allies * perAlly, perAlly, holdUntil: Date.now() + holdMs, finished: 0, idleSince: Date.now() });
       }
 
@@ -189,7 +191,7 @@ export const kingshotHeal: Recipe = {
         await sleep(400);
         await phone.tap(healButton);
         const batchAllies = Math.max(1, Math.round(s.batch / perAlly));
-        console.log(`${time()} heal ${s.heals + 1} + help (${s.batch} troops for ${batchAllies} ${batchAllies === 1 ? "ally" : "allies"})`);
+        console.log(`${time()} heal ${s.heals + 1} + help (${s.batch} ${kind} for ${batchAllies} ${batchAllies === 1 ? "ally" : "allies"})`);
         const helpedAt = Date.now();
         const seen = s.heals === 0 || (s.heals + 1) % checkEvery === 0 ? await watchForAllies(phone, Date.now() + 3000) : undefined;
         const holding = Date.now() < s.holdUntil;

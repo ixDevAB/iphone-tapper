@@ -21,8 +21,9 @@ const valueFlags: Record<string, string> = {
   "-t": "CALIBRATE_TIER",
   "--increment": "CALIBRATE_STEP",
   "-i": "CALIBRATE_STEP",
+  "--stamina": "INTEL_STAMINA",
 };
-const switches = ["--save", "--fresh", "--rebuild"];
+const switches = ["--save", "--fresh", "--rebuild", "--pan", "--storehouse", "--embrace"];
 
 const unknown = Deno.args.filter((arg) => arg.startsWith("-") && !(arg in valueFlags) && !switches.includes(arg));
 if (unknown.length) {

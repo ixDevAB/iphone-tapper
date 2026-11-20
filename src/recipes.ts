@@ -1,5 +1,7 @@
-import { kingshotCalibrate } from "../recipes/kingshot-heal/calibrate.ts";
-import { kingshotHeal } from "../recipes/kingshot-heal/recipe.ts";
+import { calibrate } from "../recipes/heal/calibrate.ts";
+import { intel } from "../recipes/intel/recipe.ts";
+import { collectPet } from "../recipes/pets/recipe.ts";
+import { heal } from "../recipes/heal/recipe.ts";
 import type { Phone } from "./phone.ts";
 
 export type Settings = {
@@ -14,6 +16,8 @@ export type Recipe = {
 };
 
 export const recipes: Record<string, Recipe> = {
-  "kingshot-heal": kingshotHeal,
-  "kingshot-calibrate": kingshotCalibrate,
+  heal,
+  calibrate,
+  intel,
+  "collect-pet": collectPet,
 };

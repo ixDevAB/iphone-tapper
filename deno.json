@@ -1,8 +1,10 @@
 {
   "tasks": {
-    "kingshot-heal": "deno run --allow-all src/start.ts kingshot-heal",
-    "kingshot-calibrate": "deno run --allow-all src/start.ts kingshot-calibrate",
-    "rebuild": "deno run --allow-all src/start.ts kingshot-heal --rebuild"
+    "heal": "deno run --allow-all src/start.ts heal",
+    "calibrate": "deno run --allow-all src/start.ts calibrate",
+    "intel": "deno run --allow-all src/start.ts intel",
+    "collect-pet": "deno run --allow-all src/start.ts collect-pet",
+    "rebuild": "deno run --allow-all src/start.ts heal --rebuild"
   },
   "imports": {
     "@std/dotenv": "jsr:@std/dotenv@^0.225.5",

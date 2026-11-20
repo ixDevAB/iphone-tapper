@@ -18,6 +18,19 @@ export const crop = (img: Image, { x, y, width, height }: Region): Image => ({
   }),
 });
 
+export const scaleUp = (img: Image, k: number): Image => ({
+  ...img,
+  width: img.width * k,
+  height: img.height * k,
+  channels: 3,
+  data: new Uint8Array(img.width * k * img.height * k * 3).map((_, i) => {
+    const p = Math.floor(i / 3);
+    const x = Math.floor((p % (img.width * k)) / k);
+    const y = Math.floor(Math.floor(p / (img.width * k)) / k);
+    return img.data[(y * img.width + x) * img.channels + (i % 3)];
+  }),
+});
+
 export const brightText = (img: Image, min: number, spread: number): Image => ({
   ...img,
   channels: 1,

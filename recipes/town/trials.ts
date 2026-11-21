@@ -5,7 +5,7 @@ import type { TextLine } from "../../src/ocr.ts";
 import type { Env, Recipe } from "../../src/recipe.ts";
 import { backArrow, center, exact, has, scale } from "../../src/screen.ts";
 import { clock, sleep } from "../../src/time.ts";
-import { panel, row, toWorld } from "../../src/town.ts";
+import { panel, row, secondsLeft, toWorld } from "../../src/town.ts";
 
 export const trials = [
   { name: "Coliseum", setting: "TRIAL_COLISEUM", match: /coliseum/i },
@@ -59,6 +59,7 @@ export const mysticTrial: Recipe = {
     const log = (text: string) => console.log(`${time()} ${text}`);
     const ratios = ratiosFrom(settings.env);
     const trialIn = (text: string) => ratios.find((t) => t.match.test(text));
+    const later: { seconds?: number } = {};
 
     const part = async (img: Image, at: { x: number; y: number; width: number; height: number }) => {
       const region = { x: at.x * scale, y: at.y * scale, width: at.width * scale, height: at.height * scale };
@@ -166,6 +167,10 @@ export const mysticTrial: Recipe = {
         const next = open[0];
         await decide("looked at the trials", { open: open.map((o) => o.trial.name), finished: s.finished });
         if (!next || s.opens >= 14) {
+          const waits = lines.flatMap((l) => /Opens in/i.test(l.text) ? [secondsLeft(l.text) ?? 0] : []).filter((n) =>
+            n
+          );
+          if (waits.length) later.seconds = Math.min(...waits) + 60;
           const where = s.finished.length ? ` in ${s.finished.join(", ")}` : "";
           return `${s.fights} ${s.fights === 1 ? "fight" : "fights"}${where}`;
         }
@@ -191,5 +196,6 @@ export const mysticTrial: Recipe = {
       start: { finished: [], fights: 0, balances: 0, opens: 0 },
       screen,
     }).finally(() => toWorld(phone));
+    return later.seconds;
   },
 };

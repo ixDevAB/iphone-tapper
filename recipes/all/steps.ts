@@ -14,6 +14,10 @@ import { collectPet } from "../pets/recipe.ts";
 import { recruit } from "../recruit/recipe.ts";
 import { shop } from "../shop/recipe.ts";
 import { terrorHunt } from "../terror/recipe.ts";
+import { collectOnline } from "../town/online.ts";
+import { mysticTrial } from "../town/trials.ts";
+import { trainTroops } from "../town/troops.ts";
+import { collectWater } from "../town/water.ts";
 import { claimVip } from "../vip/recipe.ts";
 
 export const minute = 60;
@@ -42,8 +46,14 @@ export const steps: Step[] = [
   { name: "claim-vip", recipe: claimVip, every: "day" },
   { name: "collect-conquest", recipe: collectConquest, every: 4 * hour },
   { name: "collect-backpack", recipe: collectBackpack, every: 12 * hour },
+  { name: "train-troops", recipe: trainTroops, every: 4 * hour },
+  { name: "collect-water", recipe: collectWater, every: 4 * hour },
+  { name: "collect-online", recipe: collectOnline, every: 30 * minute },
+  { name: "mystic-trial", recipe: mysticTrial, every: "day" },
   { name: "collect-daily", recipe: collectDaily, every: 4 * hour },
 ];
+
+export const onlyInTheMorning = ["terror-hunt", "claim-freebies", "claim-vip"];
 
 export const pick = (names: string[]) => names.flatMap((name) => steps.filter((s) => s.name === name));
 

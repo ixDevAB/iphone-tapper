@@ -1,7 +1,7 @@
 import { assertEquals } from "@std/assert";
 import type { Settings } from "../../src/recipe.ts";
 import { openRuns } from "../../src/runs.ts";
-import { doneToday, hour, logged, nextAt, nextReset, pick, steps } from "./steps.ts";
+import { doneToday, hour, logged, nextAt, nextReset, onlyInTheMorning, pick, steps } from "./steps.ts";
 
 const noon = Date.UTC(2026, 10, 21, 12);
 const [vip] = pick(["claim-vip"]);
@@ -44,4 +44,24 @@ Deno.test("only once a day tasks that went well count as done today", async () =
 
 Deno.test("every step has a name of its own", () => {
   assertEquals(new Set(steps.map((s) => s.name)).size, steps.length);
+});
+
+Deno.test("the mystic trials are played once a day, also when asked for in the evening", async () => {
+  const settings = settingsWith();
+  const [trial] = pick(["mystic-trial"]);
+  assertEquals(trial.every, "day");
+  assertEquals(onlyInTheMorning.includes(trial.name), false);
+  assertEquals(doneToday(settings, trial), undefined);
+  await logged(settings, trial.name, trial, () => Promise.reject(new Error("did not recognise the screen")));
+  assertEquals(doneToday(settings, trial), undefined);
+  const next = await logged(settings, trial.name, trial, () => Promise.resolve());
+  assertEquals(doneToday(settings, trial), next);
+});
+
+Deno.test("a trial that opens later brings the task back when it opens", async () => {
+  const settings = settingsWith();
+  const [trial] = pick(["mystic-trial"]);
+  const before = Date.now();
+  const next = await logged(settings, trial.name, trial, () => Promise.resolve(3600));
+  assertEquals(Math.round(((next ?? 0) - before) / 1000), 3600);
 });

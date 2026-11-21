@@ -68,3 +68,6 @@ check:
 
 test:
     deno task test
+
+runs *args:
+    deno task runs {{args}}

@@ -5,6 +5,8 @@ import { ensureOcr } from "./ocr.ts";
 import { connectPhone } from "./phone.ts";
 import { on } from "./recipe.ts";
 import { recipes } from "./recipes.ts";
+import { openRuns } from "./runs.ts";
+import { logged, steps } from "../recipes/all/steps.ts";
 import { ensureWda, startWda } from "./wda.ts";
 
 const name = Deno.args[0] ?? "";
@@ -19,7 +21,8 @@ if (args.error) {
   console.log(args.error);
   Deno.exit(1);
 }
-const settings = { ...config, env: { ...config.env, ...args.env }, given: args.given };
+const runs = openRuns();
+const settings = { ...config, env: { ...config.env, ...args.env }, given: args.given, runs };
 
 const startedAt = Date.now();
 const took = () => `${((Date.now() - startedAt) / 1000).toFixed(0)}s`;
@@ -36,11 +39,12 @@ const connected = await connectPhone(base);
 
 const stop = () => {
   connected.close();
+  runs.close();
   wda?.kill();
   Deno.exit(0);
 };
 Deno.addSignalListener("SIGINT", stop);
 
 console.log(`${recipe.description}\npress ctrl+c to stop`);
-await recipe.run(connected, settings).catch((e) => console.log(`stopped: ${e.message}`));
+await logged(settings, name, steps.find((s) => s.recipe === recipe), () => recipe.run(connected, settings));
 stop();

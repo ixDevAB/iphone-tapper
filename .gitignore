@@ -7,3 +7,4 @@ build/
 !assets/**/*.png
 !docs/images/*.png
 .direnv/
+runs.db*

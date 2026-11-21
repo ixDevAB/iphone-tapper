@@ -1,4 +1,5 @@
 import type { Phone } from "./phone.ts";
+import type { Runs } from "./runs.ts";
 
 export type Env = Record<string, string>;
 
@@ -7,6 +8,7 @@ export type Settings = {
   maxIdleMs: number;
   env: Env;
   given: string[];
+  runs: Runs;
 };
 
 export type Recipe = {

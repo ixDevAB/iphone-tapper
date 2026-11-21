@@ -26,7 +26,9 @@ If the button shows **Speed Up** or anything else, it waits until **Heal** comes
 deno task heal --allies 5
 ```
 
-On the first round and every 10th round after that it reads the "5 Allies have helped you" message and sizes the batch to that. When 10 heals in a row finish within 3 seconds of Help, it also tries one ally more. Slower heals mean the allies are at their limit, so it stops growing. It reads the tier badge (XI or X) on the top troop and uses the right amount per ally: 60 for XI and 140 for X. How much one ally heals is different for every player, so change `TROOPS_PER_ALLY_XI` and `TROOPS_PER_ALLY_X` in the [settings](#settings) to match yours.
+On the first round and every 10th round after that it reads the "5 Allies have helped you" message and sizes the batch to that. If it could not read that message for a while and 10 heals in a row finish within 3 seconds of Help, it tries one ally more. Slower heals mean the allies are at their limit, so it stops growing. It reads the tier badge (XI or X) on the top troop and uses the right amount per ally: 60 for XI and 140 for X. How much one ally heals is different for every player, so change `TROOPS_PER_ALLY_XI` and `TROOPS_PER_ALLY_X` in the [settings](#settings) to match yours.
+
+On those same rounds it prints how many injured troops are left and roughly how long that will take at the current pace.
 
 **It cancels heals the allies cannot finish.** It remembers how many allies each heal was sized for. If fewer help and the heal has not finished 10 seconds after Help, it presses **Cancel healing** and **Confirm** (all resources are refunded) and starts over with a smaller batch.
 

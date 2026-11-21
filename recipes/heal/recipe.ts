@@ -3,7 +3,7 @@ import { difference, type Image, loadImage, toPng } from "../../src/image.ts";
 import type { TextLine } from "../../src/ocr.ts";
 import type { Phone } from "../../src/phone.ts";
 import type { Recipe } from "../../src/recipes.ts";
-import { center, has } from "../../src/screen.ts";
+import { center, exact, has } from "../../src/screen.ts";
 import { sleep } from "../../src/wda.ts";
 
 export const screenWidth = 1206;
@@ -117,6 +117,8 @@ export const heal: Recipe = {
     const first = await phone.screenshot();
     if (first.width !== screenWidth) throw new Error(`this recipe only works on an iPhone 17 Pro`);
 
+    const progress: { left?: number; at: number } = { at: Date.now() };
+
     type State = {
       heals: number;
       batch: number;
@@ -200,11 +202,24 @@ export const heal: Recipe = {
         const holding = Date.now() < s.holdUntil;
         const allies = seen && seen <= maxAllies && !(holding && seen > s.allies) ? seen : s.allies;
         if (seen) console.log(`${time()} ${seen} ${seen === 1 ? "ally" : "allies"} helped${allies === seen ? "" : ", holding after a cancel"}`);
+        if (s.heals === 0 || (s.heals + 1) % checkEvery === 0) {
+          const text = (await phone.ocr(await phone.screenshot())).map((l) => l.text).join(" ");
+          const injured = text.match(/([\d,]{3,})\s*\/\s*[\d,]{3,}/)?.[1];
+          const now = injured ? Number(injured.replaceAll(",", "")) : undefined;
+          if (now !== undefined) {
+            const healed = progress.left !== undefined ? progress.left - now : 0;
+            const minutes = healed > 0 ? Math.round(now / (healed / ((Date.now() - progress.at) / 60000))) : undefined;
+            const eta = minutes === undefined ? "" : `, about ${minutes >= 60 ? `${Math.floor(minutes / 60)}h ${minutes % 60}m` : `${minutes}m`} at this pace`;
+            console.log(`${time()} ${now.toLocaleString("en-US")} injured troops left${eta}`);
+            progress.left = now;
+            progress.at = Date.now();
+          }
+        }
         await sleep(settings.intervalMs);
         return step({
           ...s,
           allies,
-          finished: allies === s.allies ? s.finished : 0,
+          finished: seen ? 0 : s.finished,
           heals: s.heals + 1,
           healedAt: Date.now(),
           batchAllies,
@@ -221,6 +236,13 @@ export const heal: Recipe = {
 
       if (!name && !s.helpedAt && Date.now() - (s.openedAt ?? 0) > 5000) {
         const lines = await phone.ocr(screen);
+        const done = exact(lines, "Done").find((l) => center(l).x > 300 && center(l).y > 400 && center(l).y < 560);
+        if (done && has(lines, /^Heal Injured$/i)) {
+          console.log(`${time()} the keyboard is still open, pressing Done`);
+          await phone.tap(center(done));
+          await sleep(1200);
+          return step({ ...s, openedAt: Date.now() });
+        }
         const injured = lines.find((l) => /^\d+%$/.test(l.text.trim()) && center(l).x > 250 && center(l).y > 650 && center(l).y < 790);
         if (injured && has(lines, /^Town$/i)) {
           console.log(`${time()} opening the Heal Injured window`);

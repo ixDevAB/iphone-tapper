@@ -6,6 +6,36 @@ It looks at the phone screen before every tap and only presses the buttons the r
 
 ## Recipes
 
+| Command                              | What it does                                                |
+| ------------------------------------ | ----------------------------------------------------------- |
+| `just heal`                          | Heals your troops with the help of your allies              |
+| `just calibrate`                     | Measures how many troops one helping ally heals             |
+| `just intel`                         | Does the intel missions                                     |
+| `just terror-hunt 3`                 | Holds Terror rallies                                        |
+| `just collect-pet`                   | Pet skills, pet adventures and ally treasure                |
+| `just collect-conquest`              | Claims the Conquest idle income                             |
+| `just collect-backpack`              | Uses gems, hero XP and the small resource items             |
+| `just collect-daily`                 | Claims the daily missions                                   |
+| `just claim-mail`                    | Reads and claims all mail                                   |
+| `just claim-alliance`                | Alliance chests and contributions                           |
+| `just claim-freebies`                | Free items in the store                                     |
+| `just claim-vip`                     | The daily VIP claims                                        |
+| `just recruit`                       | The free hero recruits                                      |
+| `just shop`                          | Buys from the Nomadic Merchant with resources               |
+| `just morning`                       | All of the above, once                                      |
+| `just evening`                       | The morning round without the once a day tasks              |
+| `just collect-all`, `just claim-all` | Only the collect tasks, or only the claim tasks             |
+| `just run`                           | Keeps doing all of it through the day                       |
+| `just train-troops`                  | Collects finished troops and trains new ones                |
+| `just collect-water`                 | Collects the water on your island                           |
+| `just collect-online`                | Claims the Online Rewards chest                             |
+| `just mystic-trial`                  | Plays the Mystic Trials with your troop ratios              |
+| `just backpack-names`                | Saves a named picture of every item in the Backpack         |
+| `just runs`                          | Shows what ran and when                                     |
+| `just decisions`                     | Shows what the tasks read, tapped and decided, step by step |
+
+Each task only takes its own arguments. One it does not know stops it before anything is pressed, and the message lists the ones it takes.
+
 ### Heal troops
 
 ```sh
@@ -121,14 +151,10 @@ rewards:
   15,000 hero xp
   3 epic conquest skill book
   2 shards of edwin
-  250 unknown-02
+  250 activity triumph points
 ```
 
-It recognises rewards by their picture. The pictures are in `assets/rewards` and the file name is the name it prints. A reward it has not seen before is saved there as `unknown-28.png` and so on: rename the file to name it.
-
-```sh
-open assets/rewards
-```
+It recognises rewards by their picture, see [Name the rewards](#name-the-rewards).
 
 ### Collect from the pets
 
@@ -213,7 +239,15 @@ Start it on the world map. It runs twelve tasks one after the other and returns 
 11. the Backpack (gems, hero XP, grey and green resources, or the colours from `--rss`)
 12. the daily missions, last so it also claims what the other steps completed
 
-If one task stops early, the round carries on with the next one.
+If one task stops early, the round carries on with the next one. The tasks that only make sense once a day (the Terror rallies, the store freebies and the VIP claims) are left out when they already went well today, see [What ran and when](#what-ran-and-when).
+
+### Evening round
+
+```sh
+just evening --pan --gourmet --embrace
+```
+
+The morning round without the once a day tasks: no Terror rallies, no store freebies and no VIP claims. It runs the other nine in the same order and takes the same arguments.
 
 ### Nomadic Merchant
 
@@ -262,17 +296,24 @@ Start it on the world map. When the **Conquest** button has a red dot, it opens 
 ### Backpack
 
 ```sh
+just collect-backpack --dry-run
 just collect-backpack
 just collect-backpack --rss grey,green,blue
 ```
 
-Start it on the world map. It opens the **Backpack** and uses, a whole stack at a time:
+Start it on the world map. It opens the **Backpack**, goes through the **Resources** and **Other** tabs, and uses a whole stack at a time of:
 
 - all gems
 - all hero XP
 - the grey and green resource items (bread, wood, stone, iron, also the secured ones)
+- Governor Gear Materials Chest, Trial Chest, Badland Treasure, Reserve Chest and Countess Chest
+- 10 VIP XP and 100 VIP XP
 
-`--rss` picks which resource colours to use: `grey`, `green`, `blue`, `purple`. It confirms the alert about the city protection limit. It never uses chests or anything else. At the end it opens every tab once to clear the red dots.
+It knows the items by their pictures in `assets/backpack` and only opens the ones it is going to use. An item it has no picture of yet is opened once to read its name, and its picture is saved. It uses nothing else, and it confirms the alert about the city protection limit. At the end it opens every tab once to clear the red dots.
+
+`--rss` picks which resource colours to use: `grey` (100), `green` (1K), `blue` (10K and 100K), `purple` (1M).
+
+The picture only decides which tiles get opened. Using items cannot be undone, so before it presses **Use** the name it reads from the open item must be on the list above, and for resources the colour of the tile that is actually open must match the size in that name. Otherwise the item is left alone. Try `--dry-run` first: it opens and closes the items and prints `would use all: ...` for each one, without ever pressing **Use**.
 
 ### Name everything in the backpack
 
@@ -281,7 +322,63 @@ just backpack-names
 just backpack-names --tabs resources,speedups
 ```
 
-Start it on the world map. It goes through the Backpack tabs, taps every item to read its name and saves its picture as `assets/backpack/<name>.png`. It only taps the item tiles and never **Use**. Run it again when you get new items; pictures that are already there are kept.
+Start it on the world map. It goes through the five Backpack tabs (Resources, Speedups, Bonuses, Gear, Other), taps every item to read its name and saves its picture as `assets/backpack/<name>.png`:
+
+```
+21:25:43 other: Corsair Key
+21:25:54 other: Crescent Emblem
+21:29:35 other: Elite Spices (54)
+stopped: 192 items named, pictures in assets/backpack/
+```
+
+It only taps the item tiles, and the close cross on the gear details. It never presses **Use**, **Unequip** or anything else, and it stops if an item stays open when it should have closed. All tabs take about half an hour. Run it again when you get new items; pictures that are already there are kept.
+
+```sh
+open assets/backpack
+```
+
+### Name the rewards
+
+The tasks print what they collected. They recognise each reward by its picture in `assets/rewards`, and the file name is the name they print. A reward they have not seen before is saved there as `unknown-20.png` and so on. To name it:
+
+1. Find out what it is. The game shows the name when you tap an item wherever rewards are listed before you claim them: the Conquest idle income, an intel marker, the chests on the daily missions, or a reward mail. For things you own, look the picture up in `assets/backpack`.
+2. Rename the file:
+   ```sh
+   mv "assets/rewards/unknown-20.png" "assets/rewards/arena token.png"
+   ```
+
+The same reward can have more than one picture: add `~2` to the name (`speedup~2.png`) and it prints under the same name.
+
+### In the town: troops, water and the online reward
+
+```sh
+just train-troops
+just collect-water
+just collect-online
+```
+
+These start on the world map or the town map and end on the world map. They find their way through the list at the side of the town map.
+
+- `train-troops` goes through the Barracks, the Stable and the Range. Where nothing is training it presses **Train** with the tier and amount the game suggests, which also collects the finished troops. It never presses **Finish** or **Speedups**.
+- `collect-water` goes to your island and taps the water above the Fountain of Life.
+- `collect-online` opens the Online Rewards chest at the storehouse when it is ready, and tells you when the next one is.
+
+### Mystic Trial
+
+```sh
+just mystic-trial
+```
+
+In every trial that is open today it presses **Challenge**, sets your troop ratio with **Balance**, presses **Deploy** and skips the fight, until that trial has no attempts left. A won fight moves on to the next stage, a lost one is tried again.
+
+The ratios are infantry/cavalry/archer in `.env`, one line per trial. A trial without a line is skipped:
+
+```
+TRIAL_KNOWLEDGE_NEXUS=50/10/40
+TRIAL_MOLTEN_FORT=60/15/25
+```
+
+It only deploys when the Troop Ratio line on the screen shows exactly your numbers.
 
 ### Collect all and claim all
 
@@ -315,7 +412,9 @@ just run --only recruit,shop
 just run --skip terror-hunt,intel
 ```
 
-`--only` runs just the tasks you list, `--skip` leaves some out. The other arguments work as for the morning round. Keep the phone unlocked on the game, on the cable, and keep the Mac awake. If a task finds another screen, it stops and gets its next turn later.
+`--only` runs just the tasks you list, `--skip` leaves some out. The other arguments work as for the morning round. Keep the phone unlocked on the game, on the cable, and keep the Mac awake.
+
+A task that meets a screen it does not know stops, saves a picture of that screen in `build/`, and gets a new turn 30 minutes later. When you stop and start `just run` again, it carries on with the schedule it had: nothing runs before it is due.
 
 ### What ran and when
 
@@ -324,7 +423,40 @@ just runs
 just runs 100
 ```
 
-Every run is saved in `runs.db`. The once a day tasks (terror-hunt, claim-freebies, claim-vip) are skipped by the rounds when they already went well since the daily reset (00:00 UTC, change with `DAY_RESET_UTC_HOUR`), and `just run` picks up its schedule where it left off. Add `--again` to run everything anyway. A task you start by itself always runs.
+```
+2026-11-21 17:23  claim-vip            9s  ok  next 2026-11-22 01:00
+2026-11-21 17:24  claim-freebies     188s  ok  next 2026-11-22 01:00
+2026-11-21 17:28  recruit             51s  failed: did not recognise the screen, see build/recruit-lost.png  next 2026-11-21 17:58
+2026-11-21 17:32  recruit             25s  ok  next 2026-11-21 22:21
+```
+
+Every run is saved in `runs.db`, with how long it took, how it went and when the task is due again.
+
+- The once a day tasks (terror-hunt, claim-freebies, claim-vip) are left out of the rounds when they already went well since the game's daily reset. The reset is 00:00 UTC; change it with `DAY_RESET_UTC_HOUR`.
+- `just run` reads its schedule from here when it starts.
+- Add `--again` to a round or to `just run` to run everything now anyway.
+- A task you start by itself always runs.
+
+### Why did it do that?
+
+```sh
+just decisions
+just decisions 200
+just decisions 200 collect-pet
+just decisions 50 "left alone"
+```
+
+Every task writes down what it does while it runs, in `decisions.log`: each time it reads the screen (with the texts it read and where they are), each tap, what it concluded, and every line it printed. The number is how many lines to show, and words after it keep only the lines that contain them.
+
+```
+22:47:29 collect-backpack  read the screen: Backpack @92,77 | Resources @49,118 | 1,571 @176,433 | ...
+22:47:30 collect-backpack  not opened row=500 column=4 item=1m wood (secured) why=it is purple and only grey, green may be used
+22:47:31 collect-backpack  opening to use row=407 column=4 item=1k wood
+22:47:31 collect-backpack  tapped x=343 y=407
+22:47:33 collect-backpack  would use all row=407 column=4 item=1k wood pictured=1k wood before=green open=green
+```
+
+Look here when a task did something you did not expect, or left something alone: the texts show what it could and could not read at that moment. The file starts over when it gets large.
 
 ### Without just
 
@@ -341,6 +473,8 @@ just fmt
 just check
 just test
 ```
+
+The tests need no phone. Run all three after every change. A new recipe goes in `recipes/<name>/recipe.ts` and is added to `src/recipes.ts` and the `justfile`.
 
 ## What you need
 
@@ -437,63 +571,76 @@ open -e .env
 
 Change a value, save, and start again.
 
-| Setting                      | What it does                                                                                                | Default                |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------------- | ---------------------- |
-| `TEAM_ID`                    | Which Apple developer team signs the helper app                                                             | Found automatically    |
-| `BUNDLE_ID`                  | Name of the helper app on the phone                                                                         | Made from your team    |
-| `INTERVAL_MS`                | Pause after each tap, in milliseconds                                                                       | `0`                    |
-| `MAX_IDLE_SECONDS`           | Stop when there has been nothing to press this long                                                         | `600`                  |
-| `CLOCK`                      | Time format in the output: `24h` (14:52:08) or `12h` (2:52:08 PM)                                           | `24h`                  |
-| `TROOPS_PER_ALLY_XI`         | Heal: how many tier XI troops one helping ally heals                                                        | `60`                   |
-| `TROOPS_PER_ALLY_X`          | Heal: how many tier X troops one helping ally heals                                                         | `140`                  |
-| `TROOPS_PER_ALLY`            | Heal: troops per ally for any other tier                                                                    | `60`                   |
-| `CALIBRATE_START`            | Heal: how many troops the first measuring heal uses (same as `--start`)                                     | `10`                   |
-| `CALIBRATE_STEP`             | Heal: how many troops each measuring heal adds (same as `--increment`)                                      | `10`                   |
-| `CALIBRATE_TIER`             | Heal: which tier to measure, `XI` or `X` (same as `--tier`)                                                 | `XI`                   |
-| `CALIBRATE_MAX`              | Heal: stop measuring at this many troops                                                                    | `2000`                 |
-| `CALIBRATE_MAX_ROUNDS`       | Heal: give up measuring, and give up confirming, after this many heals                                      | `40`                   |
-| `CALIBRATE_SETTLE_SECONDS`   | Heal: keep reading the assist message this long after a heal finished                                       | `2`                    |
-| `CALIBRATE_LEFT_SECONDS`     | Heal: a heal with this many seconds or fewer left on its timer after the assists does not count as finished | `15`                   |
-| `CALIBRATE_CONFIRM`          | Heal: how many finished heals confirm the result                                                            | `5`                    |
-| `HELP_DELAY_MS`              | Heal: pause between pressing Heal and pressing Help, in milliseconds                                        | `100`                  |
-| `ALLY_TIMEOUT_SECONDS`       | Heal: at the smallest batch, stop when a heal has not finished this long after Help                         | `240`                  |
-| `CANCEL_AFTER_SECONDS`       | Heal: cancel a bigger heal that has not finished this long after Help                                       | `10`                   |
-| `START_ALLIES`               | Heal: how many allies to size the first batch for (same as `--allies`)                                      | `1`                    |
-| `GROW_AFTER_ROUNDS`          | Heal: try one ally more after this many heals in a row finished                                             | `10`                   |
-| `CHECK_ALLIES_EVERY`         | Heal: read how many allies helped on the first round and then every N rounds                                | `10`                   |
-| `FAST_FINISH_SECONDS`        | Heal: a heal only counts toward growing if it finished this fast after Help                                 | `3`                    |
-| `MAX_ALLIES`                 | Heal: never size a batch for more allies than this                                                          | `20`                   |
-| `HOLD_AFTER_CANCEL_SECONDS`  | Heal: after a cancel, do not grow the batch again for this long                                             | `300`                  |
-| `INTEL_STAMINA`              | Intel: how much stamina it may gain from meat (same as `--stamina`)                                         | `0`                    |
-| `INTEL_STAMINA_NEEDED`       | Intel: refill or stop when the stamina is below this                                                        | `12`                   |
-| `INTEL_MARCH_WAIT_SECONDS`   | Intel: how long to wait for a free march before skipping an animal                                          | `60`                   |
-| `INTEL_COLLECT_WAIT_SECONDS` | Intel: how long to wait for marches before collecting the rewards                                           | `30`                   |
-| `HUNT_LEVEL`                 | Terror: which level to search for (same as `--level`)                                                       | `8`                    |
-| `HUNT_RETURN_MINUTES`        | Terror: how long to wait at most for a rally to come back                                                   | `20`                   |
-| `SHOP_MAX_BUYS`              | Shop: stop after this many purchases in one run                                                             | `200`                  |
-| `BACKPACK_RSS`               | Backpack: which resource colours to use (same as `--rss`)                                                   | `grey,green`           |
-| `BACKPACK_MAX_USES`          | Backpack: stop after using this many stacks                                                                 | `60`                   |
-| `DEVICE_UDID`                | Pick a specific iPhone if several are connected                                                             | First connected iPhone |
+| Setting                                                                                                                             | What it does                                                                                                | Default                                           |
+| ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| `TEAM_ID`                                                                                                                           | Which Apple developer team signs the helper app                                                             | Found automatically                               |
+| `BUNDLE_ID`                                                                                                                         | Name of the helper app on the phone                                                                         | Made from your team                               |
+| `INTERVAL_MS`                                                                                                                       | Pause after each tap, in milliseconds                                                                       | `0`                                               |
+| `MAX_IDLE_SECONDS`                                                                                                                  | Stop when there has been nothing to press this long                                                         | `600`                                             |
+| `CLOCK`                                                                                                                             | Time format in the output: `24h` (14:52:08) or `12h` (2:52:08 PM)                                           | `24h`                                             |
+| `TROOPS_PER_ALLY_XI`                                                                                                                | Heal: how many tier XI troops one helping ally heals                                                        | `60`                                              |
+| `TROOPS_PER_ALLY_X`                                                                                                                 | Heal: how many tier X troops one helping ally heals                                                         | `140`                                             |
+| `TROOPS_PER_ALLY`                                                                                                                   | Heal: troops per ally for any other tier                                                                    | `60`                                              |
+| `CALIBRATE_START`                                                                                                                   | Heal: how many troops the first measuring heal uses (same as `--start`)                                     | `10`                                              |
+| `CALIBRATE_STEP`                                                                                                                    | Heal: how many troops each measuring heal adds (same as `--increment`)                                      | `10`                                              |
+| `CALIBRATE_TIER`                                                                                                                    | Heal: which tier to measure, `XI` or `X` (same as `--tier`)                                                 | `XI`                                              |
+| `CALIBRATE_MAX`                                                                                                                     | Heal: stop measuring at this many troops                                                                    | `2000`                                            |
+| `CALIBRATE_MAX_ROUNDS`                                                                                                              | Heal: give up measuring, and give up confirming, after this many heals                                      | `40`                                              |
+| `CALIBRATE_SETTLE_SECONDS`                                                                                                          | Heal: keep reading the assist message this long after a heal finished                                       | `2`                                               |
+| `CALIBRATE_LEFT_SECONDS`                                                                                                            | Heal: a heal with this many seconds or fewer left on its timer after the assists does not count as finished | `15`                                              |
+| `CALIBRATE_CONFIRM`                                                                                                                 | Heal: how many finished heals confirm the result                                                            | `5`                                               |
+| `HELP_DELAY_MS`                                                                                                                     | Heal: pause between pressing Heal and pressing Help, in milliseconds                                        | `100`                                             |
+| `ALLY_TIMEOUT_SECONDS`                                                                                                              | Heal: at the smallest batch, stop when a heal has not finished this long after Help                         | `240`                                             |
+| `CANCEL_AFTER_SECONDS`                                                                                                              | Heal: cancel a bigger heal that has not finished this long after Help                                       | `10`                                              |
+| `START_ALLIES`                                                                                                                      | Heal: how many allies to size the first batch for (same as `--allies`)                                      | `1`                                               |
+| `GROW_AFTER_ROUNDS`                                                                                                                 | Heal: try one ally more after this many heals in a row finished                                             | `10`                                              |
+| `CHECK_ALLIES_EVERY`                                                                                                                | Heal: read how many allies helped on the first round and then every N rounds                                | `10`                                              |
+| `FAST_FINISH_SECONDS`                                                                                                               | Heal: a heal only counts toward growing if it finished this fast after Help                                 | `3`                                               |
+| `MAX_ALLIES`                                                                                                                        | Heal: never size a batch for more allies than this                                                          | `20`                                              |
+| `HOLD_AFTER_CANCEL_SECONDS`                                                                                                         | Heal: after a cancel, do not grow the batch again for this long                                             | `300`                                             |
+| `INTEL_STAMINA`                                                                                                                     | Intel: how much stamina it may gain from meat (same as `--stamina`)                                         | `0`                                               |
+| `INTEL_STAMINA_NEEDED`                                                                                                              | Intel: refill or stop when the stamina is below this                                                        | `12`                                              |
+| `INTEL_MARCH_WAIT_SECONDS`                                                                                                          | Intel: how long to wait for a free march before skipping an animal                                          | `60`                                              |
+| `INTEL_COLLECT_WAIT_SECONDS`                                                                                                        | Intel: how long to wait for marches before collecting the rewards                                           | `30`                                              |
+| `HUNT_LEVEL`                                                                                                                        | Terror: which level to search for (same as `--level`)                                                       | `8`                                               |
+| `HUNT_RETURN_MINUTES`                                                                                                               | Terror: how long to wait at most for a rally to come back                                                   | `20`                                              |
+| `SHOP_MAX_BUYS`                                                                                                                     | Shop: stop after this many purchases in one run                                                             | `200`                                             |
+| `BACKPACK_RSS`                                                                                                                      | Backpack: which resource colours to use (same as `--rss`)                                                   | `grey,green`                                      |
+| `BACKPACK_MAX_USES`                                                                                                                 | Backpack: stop after using this many stacks                                                                 | `60`                                              |
+| `BACKPACK_ITEMS`                                                                                                                    | Backpack: the other items to use, by name, separated by commas                                              | the chests and VIP XP items listed under Backpack |
+| `TRIAL_COLISEUM`, `TRIAL_FOREST_OF_LIFE`, `TRIAL_CRYSTAL_CAVE`, `TRIAL_KNOWLEDGE_NEXUS`, `TRIAL_MOLTEN_FORT`, `TRIAL_RADIANT_SPIRE` | Mystic Trial: troop ratio as infantry/cavalry/archer, adding up to 100                                      | none, the trial is skipped                        |
+| `DAY_RESET_UTC_HOUR`                                                                                                                | Rounds: the hour (UTC) the game's day starts, for the once a day tasks                                      | `0`                                               |
+| `INTEL_PAN`                                                                                                                         | Intel: `1` presses the Pan skill at the start (same as `--pan`)                                             | off                                               |
+| `STAMINA_STOREHOUSE`                                                                                                                | Intel and Terror: `1` lets it claim the Gourmet Feast (same as `--storehouse`)                              | off                                               |
+| `STAMINA_EMBRACE`                                                                                                                   | Intel and Terror: `1` lets it claim the Comforting Embrace (same as `--embrace`)                            | off                                               |
+| `CONQUEST_FORCE`                                                                                                                    | Conquest: `1` claims without the red dot (same as `--force`)                                                | off                                               |
+| `SHOP_BUY_VIP`                                                                                                                      | Shop: `1` also buys the VIP XP item for gems (same as `--buy-vip`)                                          | off                                               |
+| `OCR_ACCURATE`                                                                                                                      | `0` uses the fast text reader from the start                                                                | `1`                                               |
+| `DEVICE_UDID`                                                                                                                       | Pick a specific iPhone if several are connected                                                             | First connected iPhone                            |
 
 The recipes are made on an iPhone 17 Pro. On other models the buttons sit elsewhere and the recipe tells you it does not fit.
 
 ## When something goes wrong
 
-| What you see                                 | What to do                                                                                                                                                    |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `command not found: deno`                    | Run `nix develop` first.                                                                                                                                      |
-| `no iphone found`                            | Plug in the cable, unlock the phone, try again.                                                                                                               |
-| `is not reachable`                           | Unlock the phone and keep it unlocked while starting.                                                                                                         |
-| `no apple development certificate found`     | Do step 3 of the first time setup.                                                                                                                            |
-| `several developer teams found`              | Create the settings file and copy one of the `TEAM_ID=` lines it shows into it.                                                                               |
-| `the phone stopped accepting taps`           | The phone locked. Unlock it, set Auto-Lock to Never and start again.                                                                                          |
-| `lost the connection to the phone`           | The cable came loose or the phone locked. Plug it in, unlock it and start again.                                                                              |
-| `xcodebuild failed, see build.log`           | Check that you are signed in to Xcode and that the phone is unlocked.                                                                                         |
-| Starting takes minutes                       | The phone is connected over Wi-Fi. Plug in the cable.                                                                                                         |
-| `webdriveragent did not start`               | Unlock the phone, run `just rebuild`.                                                                                                                         |
-| `accurate text recognition is not answering` | The Mac cannot read small text right now. Healing still works, but it cannot check the amount box or count allies well. Restarting the Mac may bring it back. |
-| The phone says **Untrusted Developer**       | Settings > General > VPN & Device Management, tap your Apple ID and **Trust**.                                                                                |
-| It worked last week but not today            | Run `just rebuild` to reinstall the helper app.                                                                                                               |
+| What you see                                       | What to do                                                                                                                                                    |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `command not found: deno`                          | Run `nix develop` first.                                                                                                                                      |
+| `no iphone found`                                  | Plug in the cable, unlock the phone, try again.                                                                                                               |
+| `is not reachable`                                 | Unlock the phone and keep it unlocked while starting.                                                                                                         |
+| `no apple development certificate found`           | Do step 3 of the first time setup.                                                                                                                            |
+| `several developer teams found`                    | Create the settings file and copy one of the `TEAM_ID=` lines it shows into it.                                                                               |
+| `the phone stopped accepting taps`                 | The phone locked. Unlock it, set Auto-Lock to Never and start again.                                                                                          |
+| `lost the connection to the phone`                 | The cable came loose or the phone locked. Plug it in, unlock it and start again.                                                                              |
+| `xcodebuild failed, see build.log`                 | Check that you are signed in to Xcode and that the phone is unlocked.                                                                                         |
+| Starting takes minutes                             | The phone is connected over Wi-Fi. Plug in the cable.                                                                                                         |
+| `webdriveragent did not start`                     | Unlock the phone, run `just rebuild`.                                                                                                                         |
+| `accurate text recognition is not answering`       | The Mac cannot read small text right now. Healing still works, but it cannot check the amount box or count allies well. Restarting the Mac may bring it back. |
+| `did not recognise the screen, see build/...`      | The task met a screen it does not know. Open the picture it names to see where it was, put the game back on the world map and start again.                    |
+| `start on the world map`                           | The game is on another screen, often because the task before stopped early. Go back to the world map and start again.                                         |
+| `unknown argument`                                 | That task does not take that argument. The message lists the ones it does.                                                                                    |
+| `an item panel did not close, stopping to be safe` | Close the open item in the Backpack by hand and start `just backpack-names` again.                                                                            |
+| The phone says **Untrusted Developer**             | Settings > General > VPN & Device Management, tap your Apple ID and **Trust**.                                                                                |
+| It worked last week but not today                  | Run `just rebuild` to reinstall the helper app.                                                                                                               |
 
 **Tip for direnv users:** run `direnv allow` once and the tools load by themselves when you enter the folder, so you can skip `nix develop`.
 

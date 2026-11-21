@@ -30,6 +30,9 @@ recruit *args:
 morning *args:
     deno task start morning {{args}}
 
+evening *args:
+    deno task start evening {{args}}
+
 shop *args:
     deno task start shop {{args}}
 

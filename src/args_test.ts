@@ -65,3 +65,9 @@ Deno.test("flags of one recipe are not accepted by another", () => {
     CALIBRATE_SAVE: "1",
   });
 });
+
+Deno.test("the evening round leaves out the once a day tasks", () => {
+  assertEquals(readArgs(recipes.evening, ["--pan", "--gourmet", "--rss", "grey"]).error, undefined);
+  assertEquals(readArgs(recipes.evening, ["--level", "7"]).error?.startsWith("unknown argument --level"), true);
+  assertEquals(/Terror rallies with|two Terror/.test(recipes.evening.description), false);
+});

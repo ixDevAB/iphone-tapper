@@ -9,7 +9,7 @@ import { calibrate } from "../recipes/heal/calibrate.ts";
 import { heal } from "../recipes/heal/recipe.ts";
 import { intel } from "../recipes/intel/recipe.ts";
 import { claimMail } from "../recipes/mail/recipe.ts";
-import { morning } from "../recipes/morning/recipe.ts";
+import { evening, morning } from "../recipes/morning/recipe.ts";
 import { collectPet } from "../recipes/pets/recipe.ts";
 import { recruit } from "../recipes/recruit/recipe.ts";
 import { run } from "../recipes/run/recipe.ts";
@@ -32,6 +32,7 @@ export const recipes: Record<string, Recipe> = {
   "claim-alliance": claimAlliance,
   recruit,
   morning,
+  evening,
   run,
   "collect-all": collectAll,
   "claim-all": claimAll,

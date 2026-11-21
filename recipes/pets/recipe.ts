@@ -3,7 +3,7 @@ import { leaveRewards, type Next, press, runFlow, type Seen } from "../../src/fl
 import type { TextLine } from "../../src/ocr.ts";
 import type { Recipe } from "../../src/recipe.ts";
 import { rewardCounter } from "../../src/rewards.ts";
-import { backArrow, center, closeDialog, exact, has, matching } from "../../src/screen.ts";
+import { backArrow, center, closeDialog, exact, has, like, matching } from "../../src/screen.ts";
 import { clock, sleep } from "../../src/time.ts";
 import { onWorld } from "../../src/world.ts";
 
@@ -77,7 +77,7 @@ export const collectPet: Recipe = {
           return s;
         }
         const left = Number(remaining.text.replace(/O$/i, "0").match(/(\d+)\s*$/)?.[1] ?? 0);
-        const claimAll = matching(lines, /^cla.m all$/i);
+        const claimAll = matching(lines, like("claim all", true));
         const claim = claimAll ?? exact(lines, "Claim")[0];
         if (left > 0 && claim && s.claims < 20) {
           console.log(
@@ -120,13 +120,13 @@ export const collectPet: Recipe = {
       }
 
       if (has(lines, /^Pet Adventure$/i)) {
-        const collect = matching(lines, /cla.m all|collect all/i);
+        const collect = matching(lines, like("claim all")) ?? matching(lines, like("collect all"));
         if (collect) {
           console.log(`${time()} collecting the adventure rewards`);
           await press(phone, collect);
           return s;
         }
-        const hunt = matching(lines, /hunt all/i);
+        const hunt = matching(lines, like("hunt all"));
         if (hunt && !s.noStamina && s.hunts < 3) {
           console.log(`${time()} sending the pets hunting`);
           await press(phone, hunt);

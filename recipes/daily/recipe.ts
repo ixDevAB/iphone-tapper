@@ -1,7 +1,7 @@
 import { leaveRewards, type Next, openFromWorld, runFlow, type Seen } from "../../src/flow.ts";
 import type { Recipe } from "../../src/recipe.ts";
 import { rewardCounter } from "../../src/rewards.ts";
-import { center, has, matching } from "../../src/screen.ts";
+import { center, has, like, matching } from "../../src/screen.ts";
 import { clock, sleep } from "../../src/time.ts";
 import { onWorld } from "../../src/world.ts";
 
@@ -26,7 +26,7 @@ export const collectDaily: Recipe = {
           await sleep(1200);
           return { ...s, tabbed: true };
         }
-        const claimAll = matching(lines, /^claim all$/i);
+        const claimAll = matching(lines, like("claim all", true));
         if (claimAll && s.claims < 6) {
           console.log(`${time()} claiming the daily rewards`);
           await phone.tap(center(claimAll));

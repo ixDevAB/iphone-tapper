@@ -23,3 +23,8 @@ export const saveShot = (name: string, shot: Uint8Array | Image) =>
   Deno.mkdir(buildDir, { recursive: true })
     .then(() => Deno.writeFile(new URL(name, buildDir), shot instanceof Uint8Array ? shot : toPng(shot)))
     .catch(() => undefined);
+
+export const like = (text: string, whole = false) => {
+  const body = text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/[il1]/gi, "[il1|]").replace(/ /g, "\\s*");
+  return new RegExp(whole ? `^\\s*${body}\\s*$` : body, "i");
+};

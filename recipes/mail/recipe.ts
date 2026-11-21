@@ -1,7 +1,7 @@
 import { exitLine, type Next, openFromWorld, press, runFlow, type Seen } from "../../src/flow.ts";
 import type { Recipe } from "../../src/recipe.ts";
 import { rewardCounter } from "../../src/rewards.ts";
-import { center, exact, has, matching } from "../../src/screen.ts";
+import { center, exact, has, like, matching } from "../../src/screen.ts";
 import { clock, sleep } from "../../src/time.ts";
 import { onWorld } from "../../src/world.ts";
 
@@ -35,7 +35,7 @@ export const claimMail: Recipe = {
         return s;
       }
 
-      const claimAll = matching(lines, /read\s*&\s*claim all/i);
+      const claimAll = matching(lines, like("read & claim all"));
       if (has(lines, /^Wars$/i) && has(lines, /^Reports$/i) && has(lines, /^Starred$/i)) {
         const tab = tabs[s.tab];
         if (!tab) {

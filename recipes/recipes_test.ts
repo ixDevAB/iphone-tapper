@@ -1,6 +1,6 @@
 import { assertEquals } from "@std/assert";
 import { amountOf } from "../src/rewards.ts";
-import { center, exact, has } from "../src/screen.ts";
+import { center, exact, has, like } from "../src/screen.ts";
 import { line, picture } from "../src/testing.ts";
 import { secondsIn } from "../src/time.ts";
 import { colourAt, rowsIn } from "./backpack/tiles.ts";
@@ -25,6 +25,14 @@ Deno.test("text lines are found by exact text and by pattern", () => {
   assertEquals(exact(lines, "claim").length, 1);
   assertEquals(center(exact(lines, "Claim")[0]), { x: 100, y: 200 });
   assertEquals(has(lines, /^claim all$/i), true);
+});
+
+Deno.test("button texts match even when the reader mixes up l, I and 1", () => {
+  assertEquals(like("hunt all").test("Hunt AIl"), true);
+  assertEquals(like("claim all", true).test("C1aim All"), true);
+  assertEquals(like("claim all", true).test("Read & Claim All"), false);
+  assertEquals(like("read & claim all").test("Read&Claim AII"), true);
+  assertEquals(like("hunt all").test("Hunt"), false);
 });
 
 Deno.test("the ally count is read from the help text", () => {

@@ -3,7 +3,7 @@ import { leaveRewards, type Next, openFromWorld, runFlow, type Seen } from "../.
 import type { TextLine } from "../../src/ocr.ts";
 import type { Recipe } from "../../src/recipe.ts";
 import { rewardCounter } from "../../src/rewards.ts";
-import { backArrow, center, exact, has, matching } from "../../src/screen.ts";
+import { backArrow, center, exact, has, like, matching } from "../../src/screen.ts";
 import { clock, sleep } from "../../src/time.ts";
 import { onWorld } from "../../src/world.ts";
 
@@ -102,7 +102,7 @@ export const claimAlliance: Recipe = {
           return s;
         }
         const tab = exact(lines, current.tab).find((l) => center(l).y < 300);
-        const claimAll = matching(lines, /^claim all$/i);
+        const claimAll = matching(lines, like("claim all", true));
         if (!current.claim && tab) await phone.tap(center(tab));
         if (current.claim && claimAll) {
           log(`${current.tab}: claiming all`);

@@ -11,11 +11,15 @@ const exitSpot = { x: 200, y: 810 };
 const buttonsTop = 1500;
 const buildDir = new URL("../../build/", import.meta.url);
 
+const secondsIn = (text: string) => text.split(":").map(Number).reduce((sum, n) => sum * 60 + n, 0);
+
 export const recruit: Recipe = {
   description: "Opens Heroes and Recruit Heroes and presses every green (free) recruit button. Never presses the yellow buttons that cost keys.",
   run: async (phone, settings) => {
     const time = clock(settings.env.CLOCK);
     const lostMs = Number(settings.env.RECRUIT_LOST_SECONDS || 45) * 1000;
+
+    const next: { seconds?: number } = {};
 
     type State = { recruited: number; opens: number; leaving: boolean; knownAt: number };
 
@@ -39,6 +43,7 @@ export const recruit: Recipe = {
           return step({ ...fresh, recruited: s.recruited + 1 });
         }
         const waits = lines.flatMap((l) => l.text.match(/Next free:\s*([\d:]+)/i)?.[1] ?? []);
+        if (waits.length) next.seconds = Math.min(...waits.map(secondsIn)) + 15;
         if (!s.leaving) console.log(`${time()} no free recruit left${waits.length ? `, next free in ${waits.join(" and ")}` : ""}`);
         await phone.tap(backArrow);
         await sleep(1500);
@@ -72,5 +77,6 @@ export const recruit: Recipe = {
     const first = await phone.screenshot();
     if (first.width !== screenWidth) throw new Error(`this recipe only works on an iPhone 17 Pro`);
     console.log(`stopped: ${await step({ recruited: 0, opens: 0, leaving: false, knownAt: Date.now() })}`);
+    return next.seconds;
   },
 };

@@ -43,7 +43,7 @@ export const claimMail: Recipe = {
       }
 
       const claimAll = matching(lines, /read\s*&\s*claim all/i);
-      if (exact(lines, "Mail").length && (claimAll || has(lines, /^Starred$/i))) {
+      if (has(lines, /^Wars$/i) && has(lines, /^Reports$/i) && has(lines, /^Starred$/i)) {
         const tab = tabs[s.tab];
         if (!tab) {
           await phone.tap(closeButton);

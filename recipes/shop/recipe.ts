@@ -11,6 +11,8 @@ const closeBuy = { x: 365, y: 328 };
 const buyButton = { x: 200, y: 553 };
 const buildDir = new URL("../../build/", import.meta.url);
 
+const secondsIn = (text: string) => text.split(":").map(Number).reduce((sum, n) => sum * 60 + n, 0);
+
 export const shop: Recipe = {
   description:
     "Nomadic Merchant: buys every item that costs resources, then presses Free Refresh and repeats. With --buy-vip it also buys the VIP XP item (the yellow V) for gems. Buys nothing else with gems.",
@@ -20,6 +22,8 @@ export const shop: Recipe = {
     const lostMs = Number(settings.env.SHOP_LOST_SECONDS || 45) * 1000;
     const maxBuys = Number(settings.env.SHOP_MAX_BUYS || 200);
     const log = (text: string) => console.log(`${time()} ${text}`);
+
+    const refreshIn: { seconds?: number } = {};
 
     type State = { bought: number; vip: number; refreshes: number; expect?: "rss" | "vip"; opens: number; leaving: boolean; looks: number; knownAt: number };
 
@@ -74,6 +78,7 @@ export const shop: Recipe = {
           return step({ ...fresh, looks: s.looks + 1 });
         }
         const next = matching(lines, /^\W*\d\d:\d\d:\d\d$/)?.text.replace(/^\W+/, "");
+        if (next) refreshIn.seconds = secondsIn(next) + 15;
         log(`no free refresh left${next ? `, the shop refreshes in ${next}` : ""}`);
         return step({ ...fresh, leaving: true });
       }
@@ -98,5 +103,6 @@ export const shop: Recipe = {
     const first = await phone.screenshot();
     if (first.width !== screenWidth) throw new Error(`this recipe only works on an iPhone 17 Pro`);
     console.log(`stopped: ${await step({ bought: 0, vip: 0, refreshes: 0, opens: 0, leaving: false, looks: 0, knownAt: Date.now() })}`);
+    return refreshIn.seconds;
   },
 };

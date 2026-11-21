@@ -1,5 +1,6 @@
 import { calibrate } from "../recipes/heal/calibrate.ts";
 import { intel } from "../recipes/intel/recipe.ts";
+import { claimAll, collectAll } from "../recipes/all/recipe.ts";
 import { claimAlliance } from "../recipes/alliance/recipe.ts";
 import { claimMail } from "../recipes/mail/recipe.ts";
 import { collectPet } from "../recipes/pets/recipe.ts";
@@ -9,6 +10,7 @@ import { collectDaily } from "../recipes/daily/recipe.ts";
 import { claimFreebies } from "../recipes/freebies/recipe.ts";
 import { heal } from "../recipes/heal/recipe.ts";
 import { morning } from "../recipes/morning/recipe.ts";
+import { run } from "../recipes/run/recipe.ts";
 import { recruit } from "../recipes/recruit/recipe.ts";
 import { shop } from "../recipes/shop/recipe.ts";
 import { terrorHunt } from "../recipes/terror/recipe.ts";
@@ -23,7 +25,7 @@ export type Settings = {
 
 export type Recipe = {
   description: string;
-  run: (phone: Phone, settings: Settings) => Promise<void>;
+  run: (phone: Phone, settings: Settings) => Promise<void | number>;
 };
 
 export const recipes: Record<string, Recipe> = {
@@ -36,6 +38,9 @@ export const recipes: Record<string, Recipe> = {
   "claim-alliance": claimAlliance,
   recruit,
   morning,
+  run,
+  "collect-all": collectAll,
+  "claim-all": claimAll,
   shop,
   "claim-freebies": claimFreebies,
   "claim-vip": claimVip,

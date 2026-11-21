@@ -76,6 +76,16 @@ export const collectPet: Recipe = {
         return step({ ...fresh, noStamina: true });
       }
 
+      if (has(lines, /^Shared by/i)) {
+        const claim = exact(lines, "Claim")[0];
+        if (claim) await press(claim);
+        if (!claim) {
+          await phone.tap(has(lines, /treasures claimed/i) || has(lines, /x100|×100/i) ? { x: 346, y: 205 } : { x: 345, y: 302 });
+          await sleep(1200);
+        }
+        return step(fresh);
+      }
+
       if (has(lines, /^My Shares$/i) && has(lines, /^Alliance Shares$/i)) {
         const remaining = matching(lines, /Remaining claims today/i);
         if (!remaining) {
@@ -89,7 +99,7 @@ export const collectPet: Recipe = {
           return step(fresh);
         }
         const left = Number(remaining.text.replace(/O$/i, "0").match(/(\d+)\s*$/)?.[1] ?? 0);
-        const claimAll = matching(lines, /^claim all$/i);
+        const claimAll = matching(lines, /^cla.m all$/i);
         const claim = claimAll ?? exact(lines, "Claim")[0];
         if (left > 0 && claim && s.claims < 20) {
           console.log(`${time()} ${claimAll ? "claiming all ally treasures" : "claiming an ally treasure"} (${left} left today)`);

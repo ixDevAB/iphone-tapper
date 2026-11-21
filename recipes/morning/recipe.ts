@@ -18,7 +18,7 @@ import { claimVip } from "../vip/recipe.ts";
 
 const backArrow = { x: 30, y: 77 };
 
-const goHome = async (phone: Phone, tries: number): Promise<boolean> => {
+export const goHome = async (phone: Phone, tries: number): Promise<boolean> => {
   const lines = await phone.ocrPng(await phone.snap());
   if (has(lines, /^Town$/i)) return true;
   if (tries <= 0) return false;

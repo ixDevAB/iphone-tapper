@@ -24,6 +24,8 @@ const valueFlags: Record<string, string> = {
   "--stamina": "INTEL_STAMINA",
   "--level": "HUNT_LEVEL",
   "--rss": "BACKPACK_RSS",
+  "--only": "RUN_ONLY",
+  "--skip": "RUN_SKIP",
   "--arch": "HUNT_ARCH",
   "--inf": "HUNT_INF",
   "--cav": "HUNT_CAV",

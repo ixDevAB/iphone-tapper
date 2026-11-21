@@ -272,6 +272,41 @@ Start it on the world map. It opens the **Backpack** and uses, a whole stack at 
 
 `--rss` picks which resource colours to use: `grey`, `green`, `blue`, `purple`. It confirms the alert about the city protection limit. It never uses chests or anything else. At the end it opens every tab once to clear the red dots.
 
+### Collect all and claim all
+
+```sh
+deno task collect-all
+deno task claim-all
+```
+
+`collect-all` runs the pets, Conquest, the Backpack and the daily missions, one after the other. `claim-all` runs the mail, the alliance, the store freebies and VIP. Both start on the world map, and the arguments of the single tasks still work, for example `deno task collect-all --force --rss grey,green,blue`.
+
+### Keep running all day
+
+```sh
+deno task run --pan --gourmet --embrace
+```
+
+Start it on the world map and leave it. It starts every task once, in the same order as the morning round, and then starts each one again when it is due. In between it sleeps and tells you until when.
+
+| Task | Runs again |
+| --- | --- |
+| recruit | when the next free recruit is ready |
+| shop | when the merchant refreshes |
+| claim-mail, claim-alliance | every 2 hours |
+| intel | every 3 hours |
+| collect-pet, collect-conquest, collect-daily | every 4 hours |
+| claim-freebies | every 6 hours |
+| claim-vip, collect-backpack | every 12 hours |
+| terror-hunt | once a day |
+
+```sh
+deno task run --only recruit,shop
+deno task run --skip terror-hunt,intel
+```
+
+`--only` runs just the tasks you list, `--skip` leaves some out. The other arguments work as for the morning round. Keep the phone unlocked on the game, on the cable, and keep the Mac awake. If a task finds another screen, it stops and gets its next turn later.
+
 ### Shortcuts with just
 
 If you have [just](https://just.systems) (it comes with `nix develop`), these do the same:
@@ -286,6 +321,9 @@ just claim-mail
 just claim-alliance
 just recruit
 just morning --pan --gourmet --embrace
+just run --skip terror-hunt
+just collect-all
+just claim-all
 just shop --buy-vip
 just claim-freebies
 just claim-vip

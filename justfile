@@ -46,5 +46,14 @@ collect-conquest *args:
 collect-backpack *args:
     deno task collect-backpack {{args}}
 
+run *args:
+    deno task run {{args}}
+
+collect-all *args:
+    deno task collect-all {{args}}
+
+claim-all *args:
+    deno task claim-all {{args}}
+
 rebuild:
     deno task rebuild

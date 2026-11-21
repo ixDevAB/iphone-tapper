@@ -15,6 +15,10 @@ import { recruit } from "../recipes/recruit/recipe.ts";
 import { run } from "../recipes/run/recipe.ts";
 import { shop } from "../recipes/shop/recipe.ts";
 import { terrorHunt } from "../recipes/terror/recipe.ts";
+import { collectOnline } from "../recipes/town/online.ts";
+import { mysticTrial } from "../recipes/town/trials.ts";
+import { trainTroops } from "../recipes/town/troops.ts";
+import { collectWater } from "../recipes/town/water.ts";
 import { claimVip } from "../recipes/vip/recipe.ts";
 import type { Recipe } from "./recipe.ts";
 
@@ -38,4 +42,8 @@ export const recipes: Record<string, Recipe> = {
   "collect-conquest": collectConquest,
   "collect-backpack": collectBackpack,
   "backpack-names": backpackNames,
+  "train-troops": trainTroops,
+  "collect-water": collectWater,
+  "collect-online": collectOnline,
+  "mystic-trial": mysticTrial,
 };

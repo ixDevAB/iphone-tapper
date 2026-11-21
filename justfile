@@ -74,3 +74,18 @@ test:
 
 runs *args:
     deno task runs {{args}}
+
+decisions *args:
+    deno task decisions {{args}}
+
+train-troops *args:
+    deno task start train-troops {{args}}
+
+collect-water *args:
+    deno task start collect-water {{args}}
+
+collect-online *args:
+    deno task start collect-online {{args}}
+
+mystic-trial *args:
+    deno task start mystic-trial {{args}}

@@ -1,7 +1,8 @@
 import { decode, encode } from "fast-png";
 
 export type Image = ReturnType<typeof decode>;
-export type Region = { x: number; y: number; width: number; height: number };
+export type Point = { x: number; y: number };
+export type Region = Point & { width: number; height: number };
 
 export const fromPng = (png: Uint8Array) => decode(png);
 

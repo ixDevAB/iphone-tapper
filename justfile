@@ -2,58 +2,69 @@ default:
     @just --list
 
 heal *args:
-    deno task heal {{args}}
+    deno task start heal {{args}}
 
 heal-batchsize-calibrate *args:
-    deno task calibrate {{args}}
+    deno task start calibrate {{args}}
+
+alias calibrate := heal-batchsize-calibrate
 
 intel *args:
-    deno task intel {{args}}
+    deno task start intel {{args}}
 
 collect-pet *args:
-    deno task collect-pet {{args}}
+    deno task start collect-pet {{args}}
 
 terror-hunt *args:
-    deno task terror-hunt {{args}}
+    deno task start terror-hunt {{args}}
 
 claim-mail *args:
-    deno task claim-mail {{args}}
+    deno task start claim-mail {{args}}
 
 claim-alliance *args:
-    deno task claim-alliance {{args}}
+    deno task start claim-alliance {{args}}
 
 recruit *args:
-    deno task recruit {{args}}
+    deno task start recruit {{args}}
 
 morning *args:
-    deno task morning {{args}}
+    deno task start morning {{args}}
 
 shop *args:
-    deno task shop {{args}}
+    deno task start shop {{args}}
 
 claim-freebies *args:
-    deno task claim-freebies {{args}}
+    deno task start claim-freebies {{args}}
 
 claim-vip *args:
-    deno task claim-vip {{args}}
+    deno task start claim-vip {{args}}
 
 collect-daily *args:
-    deno task collect-daily {{args}}
+    deno task start collect-daily {{args}}
 
 collect-conquest *args:
-    deno task collect-conquest {{args}}
+    deno task start collect-conquest {{args}}
 
 collect-backpack *args:
-    deno task collect-backpack {{args}}
+    deno task start collect-backpack {{args}}
 
 run *args:
-    deno task run {{args}}
+    deno task start run {{args}}
 
 collect-all *args:
-    deno task collect-all {{args}}
+    deno task start collect-all {{args}}
 
 claim-all *args:
-    deno task claim-all {{args}}
+    deno task start claim-all {{args}}
 
 rebuild:
-    deno task rebuild
+    deno task start heal --rebuild
+
+fmt:
+    deno task fmt
+
+check:
+    deno task check
+
+test:
+    deno task test

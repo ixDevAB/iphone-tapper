@@ -1,7 +1,7 @@
 import { decodeBase64 } from "@std/encoding/base64";
 import { decode } from "fast-png";
 import { startOcr } from "./ocr.ts";
-import { sleep } from "./wda.ts";
+import { sleep } from "./time.ts";
 
 const check = <T extends { value?: unknown }>(res: T) => {
   const value = res.value as { error?: string; message?: string } | null | undefined;
@@ -43,7 +43,13 @@ export const connectPhone = async (base: string) => {
   const tap = (point: { x: number; y: number }) => post(`/session/${sessionId}/wda/tap`, point);
 
   const drag = (from: { x: number; y: number }, to: { x: number; y: number }, seconds = 0.6) =>
-    post(`/session/${sessionId}/wda/dragfromtoforduration`, { fromX: from.x, fromY: from.y, toX: to.x, toY: to.y, duration: seconds });
+    post(`/session/${sessionId}/wda/dragfromtoforduration`, {
+      fromX: from.x,
+      fromY: from.y,
+      toX: to.x,
+      toY: to.y,
+      duration: seconds,
+    });
 
   const type = async (keys: string[]) => {
     for (const key of keys) {

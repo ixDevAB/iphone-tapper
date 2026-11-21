@@ -1,8 +1,8 @@
+import { sleep } from "./time.ts";
+
 const root = new URL("..", import.meta.url).pathname;
 const wdaDir = `${root}vendor/appium-ios/packages/webdriveragent`;
 const buildDir = `${root}build`;
-
-export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const exists = (path: string) => Deno.stat(path).then(() => true, () => false);
 
@@ -29,24 +29,34 @@ export const ensureWda = async (udid: string, teamId: string, bundleId: string, 
   if (!(await exists(wdaDir))) {
     console.log("downloading webdriveragent...");
     await Deno.mkdir(`${root}vendor`, { recursive: true });
-    await run("git", [
-      "clone",
-      "--depth",
-      "1",
-      "--filter=blob:none",
-      "--sparse",
-      "https://github.com/appium/appium-ios.git",
-    ], `${root}vendor`, "download.log");
+    await run(
+      "git",
+      [
+        "clone",
+        "--depth",
+        "1",
+        "--filter=blob:none",
+        "--sparse",
+        "https://github.com/appium/appium-ios.git",
+      ],
+      `${root}vendor`,
+      "download.log",
+    );
     await run("git", ["sparse-checkout", "set", "packages/webdriveragent"], `${root}vendor/appium-ios`, "download.log");
   }
   if (rebuild || !(await exists(`${buildDir}/Build/Products`))) {
     console.log("building webdriveragent, this takes a few minutes...");
-    await run("xcodebuild", [
-      ...xcodeArgs(udid, teamId, bundleId),
-      "-allowProvisioningUpdates",
-      "CODE_SIGN_STYLE=Automatic",
-      "build-for-testing",
-    ], wdaDir, "build.log");
+    await run(
+      "xcodebuild",
+      [
+        ...xcodeArgs(udid, teamId, bundleId),
+        "-allowProvisioningUpdates",
+        "CODE_SIGN_STYLE=Automatic",
+        "build-for-testing",
+      ],
+      wdaDir,
+      "build.log",
+    );
   }
 };
 

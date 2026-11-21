@@ -1,48 +1,24 @@
-import { clock } from "../../src/clock.ts";
-import type { Recipe } from "../../src/recipes.ts";
-import { sleep } from "../../src/wda.ts";
-import { claimAlliance } from "../alliance/recipe.ts";
-import { collectBackpack } from "../backpack/recipe.ts";
-import { collectConquest } from "../conquest/recipe.ts";
-import { collectDaily } from "../daily/recipe.ts";
-import { claimFreebies } from "../freebies/recipe.ts";
-import { intel } from "../intel/recipe.ts";
-import { claimMail } from "../mail/recipe.ts";
-import { goHome } from "../morning/recipe.ts";
-import { collectPet } from "../pets/recipe.ts";
-import { recruit } from "../recruit/recipe.ts";
-import { shop } from "../shop/recipe.ts";
-import { terrorHunt } from "../terror/recipe.ts";
-import { claimVip } from "../vip/recipe.ts";
+import { optionsOf, type Recipe } from "../../src/recipe.ts";
+import { clock, sleep } from "../../src/time.ts";
+import { goHome } from "../../src/world.ts";
+import { envFor, minute, steps } from "../all/steps.ts";
 
-const minute = 60;
-const hour = 60 * minute;
+const options = optionsOf(steps.map((s) => s.recipe));
+
+const listed = (text = "") => text.split(",").map((n) => n.trim()).filter((n) => n);
 
 export const run: Recipe = {
   description:
     "Keeps running all day: starts each task when it is due (recruit and shop when their timers run out, the rest on a fixed interval) and sleeps in between.",
+  ...options,
+  flags: { ...options.flags, "--only": "RUN_ONLY", "--skip": "RUN_SKIP" },
   run: async (phone, settings) => {
     const time = clock(settings.env.CLOCK);
-    const hunt = { ...settings.env, AMOUNT: settings.env.AMOUNT || "2", HUNT_ARCH: settings.env.HUNT_ARCH || "diana", HUNT_CAV: settings.env.HUNT_CAV || "fahd" };
-    const all = [
-      { name: "intel", recipe: intel, env: settings.env, every: 3 * hour },
-      { name: "terror-hunt", recipe: terrorHunt, env: hunt, every: 24 * hour },
-      { name: "claim-mail", recipe: claimMail, env: settings.env, every: 2 * hour },
-      { name: "claim-alliance", recipe: claimAlliance, env: settings.env, every: 2 * hour },
-      { name: "shop", recipe: shop, env: { ...settings.env, SHOP_BUY_VIP: "1" }, every: 30 * minute },
-      { name: "recruit", recipe: recruit, env: settings.env, every: 30 * minute },
-      { name: "collect-pet", recipe: collectPet, env: settings.env, every: 4 * hour },
-      { name: "claim-freebies", recipe: claimFreebies, env: settings.env, every: 6 * hour },
-      { name: "claim-vip", recipe: claimVip, env: settings.env, every: 12 * hour },
-      { name: "collect-conquest", recipe: collectConquest, env: settings.env, every: 4 * hour },
-      { name: "collect-backpack", recipe: collectBackpack, env: settings.env, every: 12 * hour },
-      { name: "collect-daily", recipe: collectDaily, env: settings.env, every: 4 * hour },
-    ];
-    const only = (settings.env.RUN_ONLY || "").split(",").map((n) => n.trim()).filter((n) => n);
-    const skip = (settings.env.RUN_SKIP || "").split(",").map((n) => n.trim()).filter((n) => n);
-    const wrong = [...only, ...skip].filter((n) => !all.some((t) => t.name === n));
-    if (wrong.length) throw new Error(`unknown task ${wrong.join(", ")}, use ${all.map((t) => t.name).join(", ")}`);
-    const tasks = all.filter((t) => (!only.length || only.includes(t.name)) && !skip.includes(t.name));
+    const only = listed(settings.env.RUN_ONLY);
+    const skip = listed(settings.env.RUN_SKIP);
+    const wrong = [...only, ...skip].filter((n) => !steps.some((t) => t.name === n));
+    if (wrong.length) throw new Error(`unknown task ${wrong.join(", ")}, use ${steps.map((t) => t.name).join(", ")}`);
+    const tasks = steps.filter((t) => (!only.length || only.includes(t.name)) && !skip.includes(t.name));
     const at = (ms: number) => new Date(ms).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
     console.log(`${time()} running: ${tasks.map((t) => t.name).join(", ")}`);
 
@@ -55,7 +31,7 @@ export const run: Recipe = {
         return round(due);
       }
       console.log(`\n${time()} == ${next.name} ==`);
-      const wants = await next.recipe.run(phone, { ...settings, env: next.env }).catch((e) => {
+      const wants = await next.recipe.run(phone, { ...settings, env: envFor(next, settings.env) }).catch((e) => {
         console.log(`stopped: ${e.message}`);
         return undefined;
       });

@@ -1,19 +1,18 @@
-import { clock } from "../../src/clock.ts";
-import { difference, fromPng, loadImage, toPng } from "../../src/image.ts";
+import { difference, loadImage, type Point } from "../../src/image.ts";
+import { leaveRewards, type Next, press, runFlow, type Seen } from "../../src/flow.ts";
 import type { TextLine } from "../../src/ocr.ts";
-import type { Recipe } from "../../src/recipes.ts";
-import { sleep } from "../../src/wda.ts";
-import { findMarkers } from "./markers.ts";
+import { on, type Recipe } from "../../src/recipe.ts";
 import { rewardCounter } from "../../src/rewards.ts";
-import { center, exact, has, screenWidth } from "../../src/screen.ts";
+import { backArrow, center, exact, has, saveShot } from "../../src/screen.ts";
+import { refill, refillsFrom, staminaDialog, staminaFlags, staminaSwitches } from "../../src/stamina.ts";
+import { clock, sleep } from "../../src/time.ts";
+import { marchesOn, onWorld } from "../../src/world.ts";
+import { findMarkers } from "./markers.ts";
 
 const intelButton = { x: 369, y: 619 };
 const panButton = { x: 32, y: 170 };
 const staminaPlus = { x: 385, y: 75 };
-const closeDialog = { x: 373, y: 175 };
-const backArrow = { x: 30, y: 77 };
 const pan = { img: loadImage(new URL("../../assets/intel/pan.png", import.meta.url)), x: 70, y: 478 };
-const buildDir = new URL("../../build/", import.meta.url);
 
 const actions = [
   { button: "Rescue", kind: "tent" },
@@ -21,33 +20,29 @@ const actions = [
   { button: "Conquer", kind: "fight" },
 ];
 
-const near = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.abs(a.x - b.x) < 40 && Math.abs(a.y - b.y) < 40;
+const near = (a: Point, b: Point) => Math.abs(a.x - b.x) < 40 && Math.abs(a.y - b.y) < 40;
 
 const staminaOn = (lines: TextLine[]) => {
   const line = lines.find((l) => /^\d+$/.test(l.text.trim()) && center(l).y < 100 && center(l).x > 300);
   return line ? Number(line.text) : undefined;
 };
 
-const claimBeside = (lines: TextLine[], title: string) => {
-  const row = exact(lines, title)[0];
-  return row ? exact(lines, "Claim").find((c) => Math.abs(center(c).y - center(row).y) < 30) : undefined;
-};
-
 export const intel: Recipe = {
   description:
     "Does the intel missions. Opens Intel, taps a marker, presses View, then Rescue, Attack and Deploy, or Conquer and Fight, and claims the rewards. Never spends gems.",
+  flags: staminaFlags,
+  switches: { "--pan": "INTEL_PAN", ...staminaSwitches },
   run: async (phone, settings) => {
     const time = clock(settings.env.CLOCK);
-    const usePan = Deno.args.includes("--pan");
-    const useStorehouse = Deno.args.includes("--storehouse") || Deno.args.includes("--gourmet");
-    const useEmbrace = Deno.args.includes("--embrace");
-    const meatBudget = Math.floor(Number(settings.env.INTEL_STAMINA || 0) / 10);
+    const usePan = on(settings.env, "INTEL_PAN");
+    const refills = refillsFrom(settings.env);
+    const log = (text: string) => console.log(`${time()} ${text}`);
     const needed = Number(settings.env.INTEL_STAMINA_NEEDED || 12);
     const marchWaitMs = Number(settings.env.INTEL_MARCH_WAIT_SECONDS || 60) * 1000;
     const collectWaitMs = Number(settings.env.INTEL_COLLECT_WAIT_SECONDS || 30) * 1000;
     const lostMs = Number(settings.env.INTEL_LOST_SECONDS || 45) * 1000;
 
-    type Spot = { x: number; y: number; colour: string };
+    type Spot = Point & { colour: string };
     const finishedIntel: string[] = [];
     const rewards = rewardCounter(phone);
 
@@ -55,7 +50,7 @@ export const intel: Recipe = {
       done: number;
       meatUsed: number;
       panTried: boolean;
-      duds: { x: number; y: number }[];
+      duds: Point[];
       tapped?: Spot;
       current?: Spot;
       sent: Spot[];
@@ -65,58 +60,25 @@ export const intel: Recipe = {
       kind?: string;
       stamina?: number;
       deploys: number;
-      knownAt: number;
     };
 
-    const look = async () => {
-      const png = await phone.snap();
-      return { png, lines: await phone.ocrPng(png) };
-    };
+    const screen = async (s: State, { png, lines, img }: Seen): Next<State> => {
+      if (await leaveRewards(phone, lines, rewards, has(lines, /Victory/i))) return s;
 
-    const press = async (line: TextLine) => {
-      await phone.tap(center(line));
-      await sleep(1500);
-    };
-
-    const step = async (s: State): Promise<string> => {
-      const { png, lines } = await look();
-      const fresh = { ...s, knownAt: Date.now() };
-
-      const exit = lines.find((l) => /tap anywhere to exit/i.test(l.text));
-      if (exit) {
-        if (exact(lines, "Rewards").length) await rewards.count(has(lines, /Victory/i));
-        await press(exit);
-        return step(fresh);
-      }
-
-      if (exact(lines, "Get More").length) {
-        const bar = lines.map((l) => l.text.match(/^(\d+)\s*\/\s*(\d+)$/)).find((m) => m);
-        const current = bar ? Number(bar[1]) : undefined;
-        if (current !== undefined && current >= needed) {
-          await phone.tap(closeDialog);
-          await sleep(1000);
-          return step({ ...fresh, stamina: current });
+      if (staminaDialog(lines)) {
+        const result = await refill(phone, lines, refills, s.meatUsed, needed, log);
+        if (result.enough) return { ...s, stamina: result.current };
+        if (result.empty) {
+          log(result.empty);
+          return { ...s, empty: result.empty, kind: undefined, current: undefined };
         }
-        const feast = useStorehouse ? claimBeside(lines, "Gourmet Feast") : undefined;
-        const embrace = useEmbrace ? claimBeside(lines, "Comforting Embrace") : undefined;
-        const use = s.meatUsed < meatBudget ? exact(lines, "Use")[0] : undefined;
-        const source = feast ?? embrace ?? use;
-        if (!source) {
-          await phone.tap(closeDialog);
-          await sleep(1000);
-          const empty = `out of stamina${current === undefined ? "" : ` (${current})`}, add --storehouse, --embrace or --stamina 50 to refill`;
-          console.log(`${time()} ${empty}`);
-          return step({ ...fresh, empty, kind: undefined, current: undefined });
-        }
-        console.log(`${time()} stamina ${current ?? "?"}, ${feast ? "claiming the storehouse feast" : embrace ? "claiming the comforting embrace" : `using a meat (${s.meatUsed + 1} of ${meatBudget})`}`);
-        await press(source);
-        return step({ ...fresh, meatUsed: source === use ? s.meatUsed + 1 : s.meatUsed });
+        return { ...s, meatUsed: result.meatUsed };
       }
 
       if (exact(lines, "Squad Settings").length) {
         const fight = exact(lines, "Fight")[0];
-        if (fight) await press(fight);
-        return step(fresh);
+        if (fight) await press(phone, fight);
+        return s;
       }
 
       const deploy = exact(lines, "Deploy").find((l) => center(l).y > 700);
@@ -125,118 +87,151 @@ export const intel: Recipe = {
           console.log(`${time()} deploy did not go through, all marches may be busy, trying again in 15s`);
           await phone.tap(backArrow);
           await sleep(15000);
-          return step({ ...fresh, deploys: 0, kind: undefined, current: undefined });
+          return { ...s, deploys: 0, kind: undefined, current: undefined };
         }
-        await press(deploy);
-        return step({ ...fresh, deploys: s.deploys + 1 });
+        await press(phone, deploy);
+        return { ...s, deploys: s.deploys + 1 };
       }
 
       const action = actions.flatMap((a) => exact(lines, a.button).map((line) => ({ ...a, line })))[0];
       if (action && s.empty) {
         await phone.tap(intelButton);
         await sleep(1500);
-        return step(fresh);
+        return s;
       }
-      const marches = lines.map((l) => center(l).y > 160 && center(l).y < 190 && center(l).x < 260 ? l.text.match(/(?:^|\s)(\d)\s*\/\s*(\d)(?!\d)/) : null).find((m) => m);
-      const full = marches ? Number(marches[1]) >= Number(marches[2]) : false;
+      const marches = marchesOn(lines);
+      const full = marches ? marches.used >= marches.total : false;
       if (action && action.kind === "animal" && full) {
         const since = s.fullSince ?? Date.now();
-        if (!s.fullSince) console.log(`${time()} all ${marches?.[2]} marches are busy, waiting for one to come back`);
+        if (!s.fullSince) console.log(`${time()} all ${marches?.total} marches are busy, waiting for one to come back`);
         if (Date.now() - since < marchWaitMs) {
           await sleep(3000);
-          return step({ ...fresh, fullSince: since });
+          return { ...s, fullSince: since };
         }
         console.log(`${time()} still no free march, skipping this animal`);
         await phone.tap(intelButton);
         await sleep(1500);
         const skipped = s.tapped ?? s.current;
-        return step({ ...fresh, fullSince: undefined, tapped: undefined, current: undefined, duds: skipped ? [...s.duds, skipped] : s.duds });
+        return {
+          ...s,
+          fullSince: undefined,
+          tapped: undefined,
+          current: undefined,
+          duds: skipped ? [...s.duds, skipped] : s.duds,
+        };
       }
       if (action) {
         const colour = (s.tapped ?? s.current)?.colour;
-        if (s.kind !== action.kind) console.log(`${time()} intel ${s.done + 1}: ${colour ? `${colour} ` : ""}${action.kind}`);
-        await press(action.line);
-        return step({ ...fresh, kind: action.kind, tapped: undefined, current: s.tapped ?? s.current, fullSince: undefined });
+        if (s.kind !== action.kind) {
+          console.log(`${time()} intel ${s.done + 1}: ${colour ? `${colour} ` : ""}${action.kind}`);
+        }
+        await press(phone, action.line);
+        return { ...s, kind: action.kind, tapped: undefined, current: s.tapped ?? s.current, fullSince: undefined };
       }
 
       const view = exact(lines, "View")[0];
       if (view) {
-        await press(view);
+        await press(phone, view);
         await sleep(1500);
-        return step(fresh);
+        return s;
       }
 
       if (has(lines, /^Intel Mission$/i)) {
         const marching = s.kind && s.kind !== "fight" && s.current ? [...s.sent, s.current] : s.sent;
         if (s.kind) finishedIntel.push(`${s.current?.colour ?? "unknown"} ${s.kind}`);
-        const finished = s.kind ? { ...fresh, done: s.done + 1, kind: undefined, current: undefined, deploys: 0, sent: marching } : fresh;
-        const screen = fromPng(png);
+        const finished = s.kind
+          ? { ...s, done: s.done + 1, kind: undefined, current: undefined, deploys: 0, sent: marching }
+          : s;
+        const screen = img();
         if (usePan && !s.panTried) {
           const panDifference = difference(screen, pan.img, pan.x, pan.y);
           const there = panDifference < 12;
-          console.log(`${time()} ${there ? "pressing the pan skill" : `the pan skill is not available (picture difference ${panDifference.toFixed(0)}, see build/intel-pan.png)`}`);
-          if (!there) await Deno.writeFile(new URL("intel-pan.png", buildDir), png).catch(() => undefined);
+          console.log(
+            `${time()} ${
+              there
+                ? "pressing the pan skill"
+                : `the pan skill is not available (picture difference ${
+                  panDifference.toFixed(0)
+                }, see build/intel-pan.png)`
+            }`,
+          );
+          if (!there) await saveShot("intel-pan.png", png);
           if (there) await phone.tap(panButton);
           await sleep(1500);
-          return step({ ...finished, panTried: true });
+          return { ...finished, panTried: true };
         }
         const stamina = staminaOn(lines);
         if (stamina !== undefined && stamina !== s.stamina) console.log(`${time()} stamina ${stamina}`);
         if (stamina !== undefined && stamina < needed && !s.empty) {
           await phone.tap(staminaPlus);
           await sleep(1500);
-          return step({ ...finished, stamina });
+          return { ...finished, stamina };
         }
         const duds = s.tapped ? [...s.duds, s.tapped] : s.duds;
         const found = findMarkers(screen);
         const checks = found.filter((m) => m.kind === "check").length;
         const pending = Math.max(0, finished.sent.length - checks);
-        const marker = s.empty ? undefined : found.find((m) => m.kind !== "check" && ![...duds, ...finished.sent].some((d) => near(d, m)));
+        const marker = s.empty
+          ? undefined
+          : found.find((m) => m.kind !== "check" && ![...duds, ...finished.sent].some((d) => near(d, m)));
         if (marker) {
           await phone.tap(marker);
           await sleep(1500);
-          return step({ ...finished, stamina, duds, tapped: { x: marker.x, y: marker.y, colour: marker.kind }, collectSince: undefined });
+          return {
+            ...finished,
+            stamina,
+            duds,
+            tapped: { x: marker.x, y: marker.y, colour: marker.kind },
+            collectSince: undefined,
+          };
         }
         const claim = exact(lines, "Claim All")[0];
         const since = s.collectSince ?? Date.now();
         const waiting = pending > 0 && Date.now() - since < collectWaitMs;
         if (claim && !waiting) {
           console.log(`${time()} collecting rewards`);
-          await press(claim);
-          return step({ ...finished, stamina, duds, tapped: undefined, sent: [], collectSince: undefined });
+          await press(phone, claim);
+          return { ...finished, stamina, duds, tapped: undefined, sent: [], collectSince: undefined };
         }
         if (waiting) {
-          if (!s.collectSince) console.log(`${time()} waiting for ${pending} of ${finished.sent.length} sent intel to finish before collecting`);
+          if (!s.collectSince) {
+            console.log(
+              `${time()} waiting for ${pending} of ${finished.sent.length} sent intel to finish before collecting`,
+            );
+          }
           await sleep(3000);
-          return step({ ...finished, stamina, duds, tapped: undefined, collectSince: since });
+          return { ...finished, stamina, duds, tapped: undefined, collectSince: since };
         }
-        await Deno.writeFile(new URL("intel-end.png", buildDir), png).catch(() => undefined);
+        await saveShot("intel-end.png", png);
         const pins = found.filter((m) => m.kind !== "check");
-        console.log(`${time()} markers on the last screen: ${pins.length} seen, ${pins.filter((m) => duds.some((d) => near(d, m))).length} skipped because a tap on them opened nothing, ${pins.filter((m) => finished.sent.some((d) => near(d, m))).length} skipped as already sent (screenshot in build/intel-end.png)`);
+        console.log(
+          `${time()} markers on the last screen: ${pins.length} seen, ${
+            pins.filter((m) => duds.some((d) => near(d, m))).length
+          } skipped because a tap on them opened nothing, ${
+            pins.filter((m) => finished.sent.some((d) => near(d, m))).length
+          } skipped as already sent (screenshot in build/intel-end.png)`,
+        );
         return s.empty ? `${s.empty}, ${finished.done} done` : `no intel left to do, ${finished.done} done`;
       }
 
-      if (has(lines, /^Town$/i) || has(lines, /^Conquest$/i)) {
+      if (onWorld(lines)) {
         await phone.tap(intelButton);
         await sleep(1500);
-        return step(fresh);
+        return s;
       }
-
-      if (Date.now() - s.knownAt > lostMs) {
-        await Deno.mkdir(buildDir, { recursive: true });
-        await Deno.writeFile(new URL("intel-lost.png", buildDir), toPng(fromPng(png)));
-        return "did not recognise the screen, see build/intel-lost.png";
-      }
-      await sleep(1000);
-      return step(s);
     };
 
-    const first = await phone.screenshot();
-    if (first.width !== screenWidth) throw new Error(`this recipe only works on an iPhone 17 Pro`);
-    const reason = await step({ done: 0, meatUsed: 0, panTried: false, duds: [], sent: [], deploys: 0, knownAt: Date.now() });
-    console.log(`stopped: ${reason}`);
-    const counts = Object.entries(Object.groupBy(finishedIntel, (name) => name)).map(([name, all]) => `${all?.length ?? 0} ${name}`);
-    if (counts.length) console.log(`intel done: ${counts.join(", ")}`);
-    rewards.print();
+    await runFlow(phone, {
+      name: "intel",
+      lostMs,
+      start: { done: 0, meatUsed: 0, panTried: false, duds: [], sent: [], deploys: 0 },
+      screen,
+    }).finally(() => {
+      const counts = Object.entries(Object.groupBy(finishedIntel, (name) => name)).map(([name, all]) =>
+        `${all?.length ?? 0} ${name}`
+      );
+      if (counts.length) console.log(`intel done: ${counts.join(", ")}`);
+      rewards.print();
+    });
   },
 };

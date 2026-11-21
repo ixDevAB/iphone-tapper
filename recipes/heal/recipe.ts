@@ -1,64 +1,14 @@
-import { clock } from "../../src/clock.ts";
-import { difference, type Image, loadImage, toPng } from "../../src/image.ts";
-import type { TextLine } from "../../src/ocr.ts";
+import { requireIphone } from "../../src/flow.ts";
+import type { Image } from "../../src/image.ts";
 import type { Phone } from "../../src/phone.ts";
-import type { Recipe } from "../../src/recipes.ts";
-import { center, exact, has } from "../../src/screen.ts";
-import { sleep } from "../../src/wda.ts";
+import type { Recipe } from "../../src/recipe.ts";
+import { center, exact, has, saveShot } from "../../src/screen.ts";
+import { clock, sleep } from "../../src/time.ts";
+import { atTown } from "../../src/world.ts";
+import { alliesFrom, amountIn, cancelHeal, healButton, refs, setBatch, shows, tiers } from "./window.ts";
 
-export const screenWidth = 1206;
-export const healButton = { x: 267, y: 643 };
-const cancelButton = { x: 75, y: 659 };
-const confirmButton = { x: 285, y: 535 };
-export const infantryBox = { x: 302, y: 362 };
-const otherBoxes = [{ x: 302, y: 441 }, { x: 302, y: 523 }];
-
-const ref = (file: string, x: number, y: number) => ({ img: loadImage(new URL(`../../assets/heal/${file}`, import.meta.url)), x, y });
-export const refs = {
-  heal: ref("heal.png", 786, 1919),
-  help: ref("help.png", 790, 1935),
-  cancel: ref("cancel.png", 150, 1925),
-  confirm: ref("confirm.png", 745, 1570),
-};
-export const tiers = [
-  { name: "XI", ref: ref("tier-xi.png", 203, 1098), setting: "TROOPS_PER_ALLY_XI", troops: 60 },
-  { name: "X", ref: ref("tier-x.png", 203, 1098), setting: "TROOPS_PER_ALLY_X", troops: 140 },
-];
-
-
-export const shows = (screen: Image, r: { img: Image; x: number; y: number }) => difference(screen, r.img, r.x, r.y) < 12;
-
-const visibleButton = (screen: Image) => shows(screen, refs.heal) ? "heal" : shows(screen, refs.help) ? "help" : undefined;
-
-const buildDir = new URL("../../build/", import.meta.url);
-export const saveShot = (name: string, img: Image) => Deno.writeFile(new URL(name, buildDir), toPng(img)).catch(() => undefined);
-
-export const amountIn = (lines: TextLine[], down = 0) => {
-  const box = lines.find((l) => l.x > 0.65 && l.y > 0.39 + down && l.y < 0.43 + down && /^[\d,.\s]+$/.test(l.text));
-  return box ? Number(box.text.replace(/\D/g, "")) : undefined;
-};
-
-export const typeInto = async (phone: Phone, box: { x: number; y: number }, troops: number, shot?: string) => {
-  await phone.tap(box);
-  await sleep(800);
-  if (shot) await saveShot(shot, await phone.screenshot());
-  await phone.type([..."\b".repeat(6), ...String(troops), "\n"]);
-  await sleep(800);
-};
-
-export const setBatch = async (phone: Phone, troops: number, shot?: string) => {
-  await typeInto(phone, infantryBox, troops, shot);
-  for (const box of otherBoxes) {
-    await typeInto(phone, box, 0).catch(() => undefined);
-  }
-};
-
-export const waitFor = async (phone: Phone, r: { img: Image; x: number; y: number }, until: number): Promise<boolean> => {
-  if (Date.now() > until) return false;
-  if (shows(await phone.screenshot(), r)) return true;
-  await sleep(300);
-  return waitFor(phone, r, until);
-};
+const visibleButton = (screen: Image) =>
+  shows(screen, refs.heal) ? "heal" : shows(screen, refs.help) ? "help" : undefined;
 
 const setAndRead = async (phone: Phone, troops: number, tries: number): Promise<number | undefined> => {
   await setBatch(phone, troops, tries <= 1 ? "batch-keyboard.png" : undefined);
@@ -68,22 +18,6 @@ const setAndRead = async (phone: Phone, troops: number, tries: number): Promise<
   if (tries > 1) return setAndRead(phone, troops, tries - 1);
   await saveShot("batch-not-set.png", screen);
   return shown;
-};
-
-export const cancelHeal = async (phone: Phone) => {
-  if (!(await waitFor(phone, refs.cancel, Date.now() + 2000))) return false;
-  await phone.tap(cancelButton);
-  if (!(await waitFor(phone, refs.confirm, Date.now() + 3000))) {
-    throw new Error("the cancel healing popup did not show up, stopping to be safe");
-  }
-  await phone.tap(confirmButton);
-  return waitFor(phone, refs.heal, Date.now() + 5000);
-};
-
-export const alliesFrom = (lines: { text: string }[]) => {
-  const text = lines.map((l) => l.text).join(" ");
-  const count = text.match(/(\d+)\s*All[a-z1]{2,4}\b/i)?.[1];
-  return count ? Number(count) : /Ally has help/i.test(text) ? 1 : undefined;
 };
 
 const alliesIn = async (phone: Phone, screen: Image) => alliesFrom(await phone.ocr(screen));
@@ -97,6 +31,7 @@ const watchForAllies = async (phone: Phone, until: number): Promise<number | und
 export const heal: Recipe = {
   description:
     "Presses Heal, then Help, grows the batch while allies finish every heal, and cancels a heal they cannot finish. Never presses Speed Up or Finish.",
+  flags: { "--allies": "START_ALLIES", "-a": "START_ALLIES" },
   run: async (phone, settings) => {
     const time = clock(settings.env.CLOCK);
     const fallbackPerAlly = Number(settings.env.TROOPS_PER_ALLY || 60);
@@ -114,8 +49,7 @@ export const heal: Recipe = {
     const helpDelayMs = Number(settings.env.HELP_DELAY_MS ?? 100);
     const holdMs = Number(settings.env.HOLD_AFTER_CANCEL_SECONDS || 300) * 1000;
 
-    const first = await phone.screenshot();
-    if (first.width !== screenWidth) throw new Error(`this recipe only works on an iPhone 17 Pro`);
+    await requireIphone(phone);
 
     const progress: { left?: number; at: number } = { at: Date.now() };
 
@@ -141,7 +75,9 @@ export const heal: Recipe = {
       const fast = justFinished && Date.now() - (previous.helpedAt ?? 0) < fastMs;
       const finished = fast ? previous.finished + 1 : justFinished ? 0 : previous.finished;
       const grow = finished >= growAfter && Date.now() >= previous.holdUntil && previous.allies < maxAllies;
-      if (grow) console.log(`${time()} ${growAfter} heals in a row finished fast, trying ${previous.allies + 1} allies`);
+      if (grow) {
+        console.log(`${time()} ${growAfter} heals in a row finished fast, trying ${previous.allies + 1} allies`);
+      }
       const s = {
         ...previous,
         allies: grow ? previous.allies + 1 : previous.allies,
@@ -157,7 +93,9 @@ export const heal: Recipe = {
         const allies = s.batchAllies - 1;
         console.log(`${time()} heal was sized for ${s.batchAllies} allies but did not finish, cancelling`);
         const cancelled = await cancelHeal(phone);
-        if (cancelled) console.log(`${time()} cancelled, starting over for ${allies} ${allies === 1 ? "ally" : "allies"}`);
+        if (cancelled) {
+          console.log(`${time()} cancelled, starting over for ${allies} ${allies === 1 ? "ally" : "allies"}`);
+        }
         return step({
           ...s,
           allies,
@@ -182,8 +120,20 @@ export const heal: Recipe = {
           return step({ ...s, batch: target, perAlly, idleSince: Date.now() });
         }
         const allies = Math.max(1, Math.floor(shown / perAlly));
-        console.log(`${time()} could not set the batch to ${target} ${kind}, the box shows ${shown}, continuing for ${allies} ${allies === 1 ? "ally" : "allies"} (screenshots in build/)`);
-        return step({ ...s, allies, batch: allies * perAlly, perAlly, holdUntil: Date.now() + holdMs, finished: 0, idleSince: Date.now() });
+        console.log(
+          `${time()} could not set the batch to ${target} ${kind}, the box shows ${shown}, continuing for ${allies} ${
+            allies === 1 ? "ally" : "allies"
+          } (screenshots in build/)`,
+        );
+        return step({
+          ...s,
+          allies,
+          batch: allies * perAlly,
+          perAlly,
+          holdUntil: Date.now() + holdMs,
+          finished: 0,
+          idleSince: Date.now(),
+        });
       }
 
       if (name === "heal" && Date.now() - s.healedAt < 500) {
@@ -196,23 +146,40 @@ export const heal: Recipe = {
         await sleep(helpDelayMs);
         await phone.tap(healButton);
         const batchAllies = Math.max(1, Math.round(s.batch / perAlly));
-        console.log(`${time()} heal ${s.heals + 1} + help (${s.batch} ${kind} for ${batchAllies} ${batchAllies === 1 ? "ally" : "allies"})`);
+        console.log(
+          `${time()} heal ${s.heals + 1} + help (${s.batch} ${kind} for ${batchAllies} ${
+            batchAllies === 1 ? "ally" : "allies"
+          })`,
+        );
         const helpedAt = Date.now();
-        const seen = s.heals === 0 || (s.heals + 1) % checkEvery === 0 ? await watchForAllies(phone, Date.now() + 3000) : undefined;
+        const seen = s.heals === 0 || (s.heals + 1) % checkEvery === 0
+          ? await watchForAllies(phone, Date.now() + 3000)
+          : undefined;
         const holding = Date.now() < s.holdUntil;
         const allies = seen && seen <= maxAllies && !(holding && seen > s.allies) ? seen : s.allies;
-        if (seen) console.log(`${time()} ${seen} ${seen === 1 ? "ally" : "allies"} helped${allies === seen ? "" : ", holding after a cancel"}`);
+        if (seen) {
+          console.log(
+            `${time()} ${seen} ${seen === 1 ? "ally" : "allies"} helped${
+              allies === seen ? "" : ", holding after a cancel"
+            }`,
+          );
+        }
         if (s.heals === 0 || (s.heals + 1) % checkEvery === 0) {
           const text = (await phone.ocr(await phone.screenshot())).map((l) => l.text).join(" ");
           const injured = text.match(/(\d{1,3}(?:[,. ]\d{3})*)\s*\/\s*(\d{1,3}(?:[,. ]\d{3})+)/);
           const count = injured ? Number(injured[1].replace(/\D/g, "")) : undefined;
           const capacity = injured ? Number(injured[2].replace(/\D/g, "")) : 0;
-          const jumped = count !== undefined && progress.left !== undefined && progress.left - count > progress.left * 0.5 && progress.left > 5000;
+          const jumped = count !== undefined && progress.left !== undefined &&
+            progress.left - count > progress.left * 0.5 && progress.left > 5000;
           const now = count !== undefined && count <= capacity && !jumped ? count : undefined;
           if (now !== undefined) {
             const healed = progress.left !== undefined ? progress.left - now : 0;
             const minutes = healed > 0 ? Math.round(now / (healed / ((Date.now() - progress.at) / 60000))) : undefined;
-            const eta = minutes === undefined ? "" : `, about ${minutes >= 60 ? `${Math.floor(minutes / 60)}h ${minutes % 60}m` : `${minutes}m`} at this pace`;
+            const eta = minutes === undefined
+              ? ""
+              : `, about ${
+                minutes >= 60 ? `${Math.floor(minutes / 60)}h ${minutes % 60}m` : `${minutes}m`
+              } at this pace`;
             console.log(`${time()} ${now.toLocaleString("en-US")} injured troops left${eta}`);
             progress.left = now;
             progress.at = Date.now();
@@ -246,8 +213,10 @@ export const heal: Recipe = {
           await sleep(1200);
           return step({ ...s, openedAt: Date.now() });
         }
-        const injured = lines.find((l) => /^\d+%$/.test(l.text.trim()) && center(l).x > 250 && center(l).y > 650 && center(l).y < 790);
-        if (injured && has(lines, /^Town$/i)) {
+        const injured = lines.find((l) =>
+          /^\d+%$/.test(l.text.trim()) && center(l).x > 250 && center(l).y > 650 && center(l).y < 790
+        );
+        if (injured && atTown(lines)) {
           console.log(`${time()} opening the Heal Injured window`);
           await phone.tap({ x: center(injured).x, y: center(injured).y - 19 });
           await sleep(1500);

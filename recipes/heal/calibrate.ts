@@ -1,16 +1,31 @@
-import { clock } from "../../src/clock.ts";
+import { requireIphone } from "../../src/flow.ts";
 import { difference, fromPng, type Image } from "../../src/image.ts";
 import type { TextLine } from "../../src/ocr.ts";
-import type { Recipe } from "../../src/recipes.ts";
-import { sleep } from "../../src/wda.ts";
-import { alliesFrom, amountIn, cancelHeal, healButton, infantryBox, refs, saveShot, screenWidth, shows, tiers, typeInto, waitFor } from "./recipe.ts";
+import { on, type Recipe } from "../../src/recipe.ts";
+import { saveShot } from "../../src/screen.ts";
+import { clock, sleep } from "../../src/time.ts";
+import {
+  alliesFrom,
+  amountIn,
+  cancelHeal,
+  healButton,
+  infantryBox,
+  type Ref,
+  refs,
+  shows,
+  tiers,
+  typeInto,
+  waitFor,
+} from "./window.ts";
 
 const envFile = new URL("../../.env", import.meta.url);
 
 export const withSetting = (file: string, name: string, value: number) => {
   const line = `${name}=${value}`;
   const pattern = new RegExp(`^${name}=.*$`, "m");
-  const body = pattern.test(file) ? file.replace(pattern, line) : `${file}${file === "" || file.endsWith("\n") ? "" : "\n"}${line}`;
+  const body = pattern.test(file)
+    ? file.replace(pattern, line)
+    : `${file}${file === "" || file.endsWith("\n") ? "" : "\n"}${line}`;
   return body.endsWith("\n") ? body : `${body}\n`;
 };
 
@@ -23,13 +38,14 @@ const loadProgress = async () => JSON.parse(await Deno.readTextFile(progressFile
 
 const saveProgress = async (tier: string, { low, high, assists }: { low: number; high?: number; assists: number }) => {
   await Deno.mkdir(buildDir, { recursive: true });
-  await Deno.writeTextFile(progressFile, `${JSON.stringify({ ...(await loadProgress()), [tier]: { low, high, assists } }, null, 2)}\n`);
+  await Deno.writeTextFile(
+    progressFile,
+    `${JSON.stringify({ ...(await loadProgress()), [tier]: { low, high, assists } }, null, 2)}\n`,
+  );
 };
 
 const rowPixels = 239;
 const rows = [0, 1, 2];
-
-type Ref = { img: Image; x: number; y: number };
 
 const badgeIn = (screen: Image, row: number, wanted: Ref, rest: Ref[]) => {
   const at = (r: Ref, dy: number) => difference(screen, r.img, r.x, r.y + dy);
@@ -52,6 +68,15 @@ type Check = { rounds: number; perAlly: number; passed: number; assists: number;
 export const calibrate: Recipe = {
   description:
     "Finds how many troops of a tier one helping ally heals. Heals 10, then 20, then 30, narrows in on the limit, then confirms it with 5 heals. Heals that do not finish are cancelled.",
+  flags: {
+    "--start": "CALIBRATE_START",
+    "-s": "CALIBRATE_START",
+    "--tier": "CALIBRATE_TIER",
+    "-t": "CALIBRATE_TIER",
+    "--increment": "CALIBRATE_STEP",
+    "-i": "CALIBRATE_STEP",
+  },
+  switches: { "--save": "CALIBRATE_SAVE", "--fresh": "CALIBRATE_FRESH" },
   run: async (phone, settings) => {
     const time = clock(settings.env.CLOCK);
     const start = Number(settings.env.CALIBRATE_START || 10);
@@ -63,12 +88,13 @@ export const calibrate: Recipe = {
     const settleMs = Number(settings.env.CALIBRATE_SETTLE_SECONDS || 2) * 1000;
     const waitMs = Number(settings.env.FAST_FINISH_SECONDS || 3) * 1000;
 
-    const first = await phone.screenshot();
-    if (first.width !== screenWidth) throw new Error(`this recipe only works on an iPhone 17 Pro`);
+    const first = await requireIphone(phone);
     if (!shows(first, refs.heal)) console.log(`${time()} waiting for the Heal button`);
     if (!(await waitFor(phone, refs.heal, Date.now() + 30000))) {
       await saveShot("calibrate-no-heal-button.png", await phone.screenshot());
-      throw new Error("the Heal button did not show up within 30s, open the Heal Injured window and wait for any running heal to finish (screenshot in build/calibrate-no-heal-button.png)");
+      throw new Error(
+        "the Heal button did not show up within 30s, open the Heal Injured window and wait for any running heal to finish (screenshot in build/calibrate-no-heal-button.png)",
+      );
     }
 
     const ready = await phone.screenshot();
@@ -78,24 +104,44 @@ export const calibrate: Recipe = {
     await saveShot("calibrate-start.png", ready);
     const rest = tiers.filter((t) => t !== wanted).map((t) => t.ref);
     const badges = rows.map((k) => badgeIn(ready, k, wanted.ref, rest));
-    console.log(`${time()} tier ${wanted.name} badge: ${badges.map((b) => `troop ${b.row + 1} ${b.found ? "yes" : "no"} (${b.d.toFixed(1)} against ${b.other.toFixed(1)})`).join(", ")}`);
+    console.log(
+      `${time()} tier ${wanted.name} badge: ${
+        badges.map((b) =>
+          `troop ${b.row + 1} ${b.found ? "yes" : "no"} (${b.d.toFixed(1)} against ${b.other.toFixed(1)})`
+        ).join(", ")
+      }`,
+    );
     const offset = badges.find((b) => b.found)?.dy;
-    if (offset === undefined) throw new Error(`tier ${asked} is not among the first three troops in the Heal Injured window, pick another with --tier`);
+    if (offset === undefined) {
+      throw new Error(
+        `tier ${asked} is not among the first three troops in the Heal Injured window, pick another with --tier`,
+      );
+    }
     const row = Math.round(offset / rowPixels);
     const box = { x: infantryBox.x, y: infantryBox.y + offset / 3 };
-    const others = rows.filter((k) => k !== row).map((k) => ({ x: infantryBox.x, y: infantryBox.y + (k * rowPixels) / 3 }));
+    const others = rows.filter((k) => k !== row).map((k) => ({
+      x: infantryBox.x,
+      y: infantryBox.y + (k * rowPixels) / 3,
+    }));
     const setting = wanted.setting;
     console.log(`${time()} measuring tier ${wanted.name} on troop ${row + 1} (${setting})`);
 
     type Frame = { allies?: number; timer?: number };
 
-    const watch = async (until: number, reads: Promise<Frame>[] = [], finishedAt?: number): Promise<{ finished: boolean; allies?: number; left?: number }> => {
+    const watch = async (
+      until: number,
+      reads: Promise<Frame>[] = [],
+      finishedAt?: number,
+    ): Promise<{ finished: boolean; allies?: number; left?: number }> => {
       const png = await phone.snap();
       const healShown = shows(fromPng(png), refs.heal);
       const previous: Promise<unknown> = reads.at(-1) ?? Promise.resolve();
       const read = previous
         .then(() => phone.ocrPng(png))
-        .then((lines): Frame => ({ allies: alliesFrom(lines), timer: healShown ? undefined : timerIn(lines) }), (): Frame => ({}));
+        .then(
+          (lines): Frame => ({ allies: alliesFrom(lines), timer: healShown ? undefined : timerIn(lines) }),
+          (): Frame => ({}),
+        );
       const doneAt = finishedAt ?? (healShown ? Date.now() : undefined);
       const over = doneAt ? Date.now() - doneAt > settleMs : Date.now() > until;
       if (!over) return watch(until, [...reads, read], doneAt);
@@ -125,8 +171,18 @@ export const calibrate: Recipe = {
       const cancelled = done || await cancelHeal(phone).catch(() => false);
       const back = cancelled || await waitFor(phone, refs.heal, Date.now() + 3000);
       const finished = done && left === undefined;
-      const outcome = finished ? "finished" : done ? `was not finished by the assists, ${left}s were left on the timer` : cancelled ? "did not finish, cancelled" : back ? "finished late" : "did not finish and could not be cancelled";
-      const helped = allies ? `${allies} ${allies === 1 ? "assist" : "assists"} (${(troops / allies).toFixed(1)} per assist)` : "assists not readable";
+      const outcome = finished
+        ? "finished"
+        : done
+        ? `was not finished by the assists, ${left}s were left on the timer`
+        : cancelled
+        ? "did not finish, cancelled"
+        : back
+        ? "finished late"
+        : "did not finish and could not be cancelled";
+      const helped = allies
+        ? `${allies} ${allies === 1 ? "assist" : "assists"} (${(troops / allies).toFixed(1)} per assist)`
+        : "assists not readable";
       return {
         finished,
         allies,
@@ -145,7 +201,11 @@ export const calibrate: Recipe = {
     };
 
     const following = (s: Search, troops: number) =>
-      s.high === undefined ? troops + increment : !s.low ? fallback(s, troops) : Math.round(((s.low + s.high) / 2) * s.assists);
+      s.high === undefined
+        ? troops + increment
+        : !s.low
+        ? fallback(s, troops)
+        : Math.round(((s.low + s.high) / 2) * s.assists);
 
     const search = async (troops: number, last: Search): Promise<Search> => {
       if (settled(last)) return { ...last, reason: "found the limit" };
@@ -159,8 +219,18 @@ export const calibrate: Recipe = {
       const low = finished && counted ? Math.max(last.low, troops / counted) : last.low;
       const high = !finished && counted ? Math.min(last.high ?? Infinity, troops / counted) : last.high;
       const next = { ...last, rounds: last.rounds + 1, low, high, assists: counted ?? last.assists };
-      const known = `one assist heals ${low ? `at least ${low.toFixed(1)}` : "?"} and ${high ? `less than ${high.toFixed(1)}` : "no upper limit yet"}`;
-      console.log(`${time()} ${text}, ${misread ? `does not count, ${last.high?.toFixed(1)} per assist already failed so the assist count must be wrong, still ${known}` : known}`);
+      const known = `one assist heals ${low ? `at least ${low.toFixed(1)}` : "?"} and ${
+        high ? `less than ${high.toFixed(1)}` : "no upper limit yet"
+      }`;
+      console.log(
+        `${time()} ${text}, ${
+          misread
+            ? `does not count, ${
+              last.high?.toFixed(1)
+            } per assist already failed so the assist count must be wrong, still ${known}`
+            : known
+        }`,
+      );
       await saveProgress(wanted.name, next);
       if (stop) return { ...next, reason: stop };
       return search(counted ? following(next, troops) : troops, next);
@@ -196,12 +266,18 @@ export const calibrate: Recipe = {
       return check(next);
     };
 
-    const saved = Deno.args.includes("--fresh") ? undefined : (await loadProgress())[wanted.name];
+    const saved = on(settings.env, "CALIBRATE_FRESH") ? undefined : (await loadProgress())[wanted.name];
     if (saved?.low) {
-      console.log(`${time()} continuing from the last run: one assist heals at least ${saved.low.toFixed(1)}${saved.high ? ` and less than ${saved.high.toFixed(1)}` : ""} (add --fresh to start over)`);
+      console.log(
+        `${time()} continuing from the last run: one assist heals at least ${saved.low.toFixed(1)}${
+          saved.high ? ` and less than ${saved.high.toFixed(1)}` : ""
+        } (add --fresh to start over)`,
+      );
     }
     const resumed = { rounds: 0, low: saved?.low ?? 0, high: saved?.high, assists: saved?.assists ?? 0, reason: "" };
-    const opening = resumed.low && resumed.assists && !Deno.args.includes("--start") ? following(resumed, Math.round(resumed.low * resumed.assists)) : start;
+    const opening = resumed.low && resumed.assists && !settings.given.includes("CALIBRATE_START")
+      ? following(resumed, Math.round(resumed.low * resumed.assists))
+      : start;
     const found = await search(opening, resumed);
     console.log(`${time()} stopped searching: ${found.reason}`);
     if (!found.low) {
@@ -216,7 +292,13 @@ export const calibrate: Recipe = {
       return;
     }
 
-    const unchecked = { rounds: 0, perAlly: candidate, passed: 0, assists: found.assists, reason: "skipped, the search did not finish" };
+    const unchecked = {
+      rounds: 0,
+      perAlly: candidate,
+      passed: 0,
+      assists: found.assists,
+      reason: "skipped, the search did not finish",
+    };
     if (settled(found)) console.log(`${time()} confirming ${candidate} per assist with ${confirmations} heals`);
     const checked = settled(found) ? await check({ ...unchecked, reason: "" }) : unchecked;
     console.log(`${time()} stopped confirming: ${checked.reason}`);
@@ -225,11 +307,15 @@ export const calibrate: Recipe = {
       console.log("no amount could be confirmed, try again");
       return;
     }
-    console.log(`${setting}=${perAlly}${checked.passed >= confirmations ? "" : ` (only ${checked.passed} of ${confirmations} confirmed)`}`);
+    console.log(
+      `${setting}=${perAlly}${
+        checked.passed >= confirmations ? "" : ` (only ${checked.passed} of ${confirmations} confirmed)`
+      }`,
+    );
     const safer = Math.max(1, perAlly - 1);
     console.log(`${perAlly} may have been lucky rounds, ${setting}=${safer} is the safer choice`);
 
-    if (Deno.args.includes("--save")) {
+    if (on(settings.env, "CALIBRATE_SAVE")) {
       const file = await Deno.readTextFile(envFile).catch(() => "");
       await Deno.writeTextFile(envFile, withSetting(file, setting, safer));
       console.log(`saved ${setting}=${safer} to .env`);

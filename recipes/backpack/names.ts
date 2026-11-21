@@ -1,12 +1,12 @@
 import { look, requireIphone, type Seen } from "../../src/flow.ts";
 import { crop, type Image, type Point, toPng } from "../../src/image.ts";
-import type { TextLine } from "../../src/ocr.ts";
-import { rgbAt, share } from "../../src/pixels.ts";
+import { latin, type TextLine } from "../../src/ocr.ts";
+import { rgbAt } from "../../src/pixels.ts";
 import type { Recipe } from "../../src/recipe.ts";
 import { backArrow, center, exact, has, saveShot, scale } from "../../src/screen.ts";
 import { clock, sleep } from "../../src/time.ts";
 import { atTown } from "../../src/world.ts";
-import { columns } from "./tiles.ts";
+import { columns, panelIn, tileAbovePanel, tileRows } from "./tiles.ts";
 
 const backpackButton = { x: 170, y: 825 };
 const tabY = 121;
@@ -18,61 +18,47 @@ const tabs = [
   { name: "other", x: 353 },
 ];
 const dir = new URL("../../assets/backpack/", import.meta.url);
+const listTop = 150;
 const cells = { columns: 6, rows: 5, step: 5 };
-const tileHeight = 76;
-const pitch = 93;
 const label = /^([\d,.]+|\W*lv\S*\s*\d+)$/i;
 const misread: Record<string, string> = {
   "hunting arrowa": "hunting arrow",
   "crusader battle boots": "crusader's battle boots",
 };
-const tileAbovePanel = 61;
-const margins = [75, 1100];
-const scan = { top: 150, bottom: 840, step: 2, run: 10 };
 
-const isCream = (r: number, g: number, b: number) => r > 235 && g > 220 && b > 200 && r - b < 60;
-
-const iconAt = (spot: Point) => ({
+export const iconAt = (spot: Point) => ({
   x: spot.x * scale - 90,
   y: Math.round(spot.y * scale) - 100,
   width: 180,
   height: 140,
 });
 
-const tileAt = (spot: Point) => ({
+export const tileAt = (spot: Point) => ({
   x: spot.x * scale - 108,
   y: Math.round(spot.y * scale) - 108,
   width: 216,
   height: 216,
 });
 
-export const panelIn = (img: Image) => {
-  const ys = Array.from(
-    { length: Math.floor((scan.bottom - scan.top) / scan.step) },
-    (_, i) => scan.top + i * scan.step,
-  );
-  const cream = ys.map((y) =>
-    margins.every((x) => share(img, { x, y: y * scale, width: 30, height: 3 }, isCream, 3) > 0.8)
-  );
-  const top = cream.findIndex((_, i) => i + scan.run <= cream.length && cream.slice(i, i + scan.run).every((c) => c));
-  return top < 0 ? undefined : { top: ys[top] };
-};
-
-export const signatureOf = (icon: Image) =>
+export const signatureIn = (img: Image, region: { x: number; y: number; width: number; height: number }) =>
   Array.from({ length: cells.columns * cells.rows }, (_, i) => {
-    const width = Math.floor(icon.width / cells.columns);
-    const height = Math.floor(icon.height / cells.rows);
+    const width = Math.floor(region.width / cells.columns);
+    const height = Math.floor(region.height / cells.rows);
     const across = Math.floor(width / cells.step);
-    const x0 = (i % cells.columns) * width;
-    const y0 = Math.floor(i / cells.columns) * height;
+    const x0 = region.x + (i % cells.columns) * width;
+    const y0 = region.y + Math.floor(i / cells.columns) * height;
     const samples = Array.from(
       { length: across * Math.floor(height / cells.step) },
-      (_, k) => rgbAt(icon, x0 + (k % across) * cells.step, y0 + Math.floor(k / across) * cells.step),
+      (_, k) => rgbAt(img, x0 + (k % across) * cells.step, y0 + Math.floor(k / across) * cells.step),
     );
     return [0, 1, 2].map((c) => samples.reduce((sum, rgb) => sum + rgb[c], 0) / samples.length);
   }).flat();
 
-export const alike = (a: number[], b: number[]) => a.reduce((sum, n, i) => sum + Math.abs(n - b[i]), 0) / a.length < 12;
+export const signatureOf = (icon: Image) => signatureIn(icon, { x: 0, y: 0, width: icon.width, height: icon.height });
+
+export const distance = (a: number[], b: number[]) => a.reduce((sum, n, i) => sum + Math.abs(n - b[i]), 0) / a.length;
+
+export const alike = (a: number[], b: number[]) => distance(a, b) < 12;
 
 export const blank = (signature: number[]) =>
   [0, 1, 2].every((c) => {
@@ -99,55 +85,11 @@ export const countAt = (lines: TextLine[], spot: Point) =>
 export const listSample = (img: Image) =>
   Array.from(
     { length: 16 * 28 },
-    (_, i) => rgbAt(img, 60 + (i % 16) * 72, (scan.top + 40 + Math.floor(i / 16) * 23) * scale),
+    (_, i) => rgbAt(img, 60 + (i % 16) * 72, (listTop + 40 + Math.floor(i / 16) * 23) * scale),
   ).flat();
 
 export const sameList = (a: number[], b: number[]) =>
   a.length === b.length && a.filter((n, i) => Math.abs(n - b[i]) > 24).length < a.length * 0.03;
-
-export const tileRows = (img: Image) => {
-  const ys = Array.from({ length: scan.bottom - scan.top }, (_, i) => scan.top + i);
-  const differs = ys.map((y) => {
-    const tile = rgbAt(img, columns[0] * scale, y * scale);
-    const beside = rgbAt(img, (columns[0] - 46) * scale, y * scale);
-    return tile.reduce((sum, n, c) => sum + Math.abs(n - beside[c]), 0) > 45;
-  });
-  const inside = differs.map((on, i) =>
-    on || (differs.slice(Math.max(0, i - 5), i).some((d) => d) && differs.slice(i + 1, i + 6).some((d) => d))
-  );
-  const starts = ys.filter((_, i) => inside[i] && !inside[i - 1]);
-  const rows = starts.flatMap((start) => {
-    const length = inside.slice(start - scan.top).findIndex((on) => !on);
-    return length >= tileHeight - 14 && length <= tileHeight + 14 ? [start + tileHeight / 2 - 1] : [];
-  });
-  return rows.flatMap((y, i) => {
-    const next = rows[i + 1];
-    const missing = next === undefined ? 0 : Math.max(0, Math.round((next - y) / pitch) - 1);
-    return [y, ...Array.from({ length: missing }, (_, k) => y + (k + 1) * (next - y) / (missing + 1))];
-  });
-};
-
-const lookalikes: Record<string, string> = {
-  "А": "A",
-  "В": "B",
-  "Е": "E",
-  "К": "K",
-  "М": "M",
-  "Н": "H",
-  "О": "O",
-  "Р": "P",
-  "С": "C",
-  "Т": "T",
-  "Х": "X",
-  "а": "a",
-  "е": "e",
-  "о": "o",
-  "р": "p",
-  "с": "c",
-  "х": "x",
-};
-
-export const latin = (text: string) => [...text].map((c) => lookalikes[c] ?? c).join("");
 
 export const titleIn = (lines: TextLine[], panel: { top: number }) => {
   const lowest = panel.top + 45;

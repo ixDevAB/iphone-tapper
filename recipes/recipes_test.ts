@@ -1,9 +1,10 @@
 import { assertEquals } from "@std/assert";
+import { latin } from "../src/ocr.ts";
 import { amountOf } from "../src/rewards.ts";
 import { center, exact, has, like } from "../src/screen.ts";
 import { line, picture } from "../src/testing.ts";
 import { secondsIn } from "../src/time.ts";
-import { colourAt, rowsIn } from "./backpack/tiles.ts";
+import { colourAt, defaultItems, mayUse, refusal, tierOf, usableTitle } from "./backpack/tiles.ts";
 import { withSetting } from "./heal/calibrate.ts";
 import { alliesFrom, amountIn } from "./heal/window.ts";
 import { findMarkers } from "./intel/markers.ts";
@@ -55,17 +56,6 @@ Deno.test("a setting is replaced in or added to the env file", () => {
   assertEquals(withSetting("", "B", 2), "B=2\n");
 });
 
-Deno.test("backpack rows come from the counts under the tiles", () => {
-  const lines = [
-    line("12", 80, 226),
-    line("3", 175, 228),
-    line("1,500", 80, 321),
-    line("7", 270, 320),
-    line("Use", 200, 600),
-  ];
-  assertEquals(rowsIn(lines), [200, 294]);
-});
-
 Deno.test("backpack tile colours are read from the tile frame", () => {
   const green = picture(1206, 900, [{ at: { x: 0, y: 0, width: 1206, height: 900 }, rgb: [60, 170, 80] }]);
   const white = picture(1206, 900, [{ at: { x: 0, y: 0, width: 1206, height: 900 }, rgb: [240, 240, 240] }]);
@@ -85,4 +75,94 @@ Deno.test("intel markers are found by colour, checks included", () => {
     { kind: "check", size: 16, x: 303, y: 403 },
     { kind: "gold", size: 100, x: 209, y: 509 },
   ]);
+});
+
+Deno.test("a colour needs two of the three samples to agree", () => {
+  const between = picture(1206, 1700, [
+    { at: { x: 0, y: 0, width: 1206, height: 1700 }, rgb: [215, 190, 165] },
+    { at: { x: 918, y: 1110, width: 223, height: 223 }, rgb: [60, 170, 80] },
+    { at: { x: 918, y: 1389, width: 223, height: 223 }, rgb: [130, 110, 235] },
+  ]);
+  assertEquals(colourAt(between, 343, 407), "green");
+  assertEquals(colourAt(between, 343, 500), "purple");
+  assertEquals(colourAt(between, 343, 468), "none");
+});
+
+Deno.test("the size in the name gives the colour of a resource item", () => {
+  assertEquals(tierOf("100 Iron"), "grey");
+  assertEquals(tierOf("1K Stone (Secured)"), "green");
+  assertEquals(tierOf("10K Bread"), "blue");
+  assertEquals(tierOf("100K Wood (Secured)"), "blue");
+  assertEquals(tierOf("1M Wood"), "purple");
+  assertEquals(tierOf("10,000 Bread"), "blue");
+  assertEquals(tierOf("5K Wood"), undefined);
+  assertEquals(tierOf("TK Wood"), undefined);
+});
+
+Deno.test("a resource is only used when its name and its colour both say it is allowed", () => {
+  const small = ["grey", "green"];
+  assertEquals(mayUse("1K Stone", "green", small), true);
+  assertEquals(mayUse("100 Iron", "grey", small), true);
+  assertEquals(mayUse("1M Wood", "green", small), false);
+  assertEquals(mayUse("1M Wood (Secured)", "green", small), false);
+  assertEquals(mayUse("100K Wood (Secured)", "grey", small), false);
+  assertEquals(mayUse("1M Wood", "purple", small), false);
+  assertEquals(mayUse("1K Stone", "blue", small), false);
+  assertEquals(mayUse("1M Wood", "purple", ["purple"]), true);
+  assertEquals(mayUse("5K Wood", "green", small), false);
+  assertEquals(mayUse("1 Gems", "none", small), true);
+  assertEquals(mayUse("1,000 Hero XP", "blue", small), true);
+  assertEquals(mayUse("Lv.1 Custom Resource Chest", "green", small), false);
+});
+
+Deno.test("of everything in the backpack only the listed things may be used", () => {
+  const dir = new URL("../assets/backpack/", import.meta.url);
+  const names = [...Deno.readDirSync(dir)].map((e) => e.name.replace(/\.png$/, ""));
+  const seen = ["grey", "green", "blue", "purple", "orange", "none"];
+  const usable = names.filter((name) => seen.some((colour) => mayUse(name, colour, ["grey", "green"], defaultItems)));
+  const expected = /^((100|1k) (bread|wood|stone|iron)( \(secured\))?|[\d,]+ gems|[\d,.]+k? hero xp)$/;
+  assertEquals(names.length > 200, true);
+  assertEquals(usable.filter((name) => !expected.test(name) && !defaultItems.includes(name)), []);
+  assertEquals(usable.includes("1k wood"), true);
+  assertEquals(usable.includes("trial chest"), true);
+  assertEquals(usable.includes("1m wood"), false);
+});
+Deno.test("a misread look-alike letter does not hide the hero xp item", () => {
+  const misread = "5,000 Hero \u0425P";
+  assertEquals(usableTitle(misread), false);
+  assertEquals(latin(misread), "5,000 Hero XP");
+  assertEquals(refusal(latin(misread), "blue", "blue", { colours: ["grey", "green"], items: [] }), undefined);
+});
+
+Deno.test("a refused item comes with the reason", () => {
+  const small = { colours: ["grey", "green"], items: defaultItems };
+  assertEquals(refusal("1K Stone", "green", "green", small), undefined);
+  assertEquals(refusal("1M Wood", "green", "purple", small), "it is purple and only grey, green may be used");
+  assertEquals(
+    refusal("1K Stone", "blue", "green", small),
+    "its name says green but the tile looked blue before it was opened",
+  );
+  assertEquals(refusal("1K Stone", "green", "none", small), "its name says green but the open tile looks none");
+  assertEquals(refusal(undefined, "green", "green", small), "its name is not known");
+  assertEquals(refusal("Governor Stamina", "blue", "blue", small), "it is not on the list of things to use");
+  assertEquals(refusal("5K Wood", "green", "green", small), "the size in its name is not one it knows");
+});
+
+Deno.test("the plain chests and vip xp items are used, other chests are not", () => {
+  const small = { colours: ["grey", "green"], items: defaultItems };
+  for (
+    const name of ["Trial Chest", "Badland Treasure", "Reserve Chest", "Countess Chest", "10 VIP XP", "100 VIP XP"]
+  ) {
+    assertEquals(refusal(name, "orange", "none", small), undefined);
+  }
+  assertEquals(refusal("governor gear materials chest", "purple", "purple", small), undefined);
+  assertEquals(refusal("Lucky Hero Gear Chest", "orange", "orange", small), "it is not on the list of things to use");
+  assertEquals(
+    refusal("Lv.1 Custom Resource Chest", "green", "green", small),
+    "it is not on the list of things to use",
+  );
+  assertEquals(
+    refusal("Trial Chest", "orange", "orange", { colours: ["grey"], items: [] }),
+    "it is not on the list of things to use",
+  );
 });

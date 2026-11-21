@@ -1,19 +1,8 @@
 import { assertEquals } from "@std/assert";
+import { latin } from "../../src/ocr.ts";
 import { line, picture } from "../../src/testing.ts";
-import {
-  alike,
-  blank,
-  countAt,
-  fileName,
-  gearTitle,
-  latin,
-  listSample,
-  panelIn,
-  sameList,
-  signatureOf,
-  tileRows,
-  titleIn,
-} from "./names.ts";
+import { panelIn, tileRows } from "./tiles.ts";
+import { alike, blank, countAt, fileName, gearTitle, listSample, sameList, signatureOf, titleIn } from "./names.ts";
 
 Deno.test("tile rows are found from the pictures, not from their labels", () => {
   const tile = (y: number) => ({ at: { x: 68, y, width: 223, height: 223 }, rgb: [120, 110, 230] });

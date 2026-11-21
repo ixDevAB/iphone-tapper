@@ -28,4 +28,4 @@ Updated 2026-11-21.
 - collect-water: its own run found nothing to collect (the fountain had just been emptied by hand), so the tap on the water bubble is untested in the task.
 - train-troops: its run found all three buildings training, so its Train press is untested in the task. Done by hand it collected the finished troops and started 1,517 of the top tier.
 - mystic-trial ran Knowledge Nexus (31-7 to 32-5) and Molten Fort (five losses at 34-8). Coliseum, Forest of Life, Crystal Cave and Radiant Spire were not open, so their names and screens are untested. A lost fight costs an attempt, a won one seems not to.
-- The town tasks and mystic-trial are not part of morning, run or collect-all yet.
+- The town tasks and mystic-trial are in morning, evening and run since 2026-11-21, but no round has been run with them yet.

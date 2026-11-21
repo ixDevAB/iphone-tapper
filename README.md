@@ -2,37 +2,37 @@
 
 Presses buttons in iPhone games for you, controlled from your Mac. It comes with ready-made **recipes**, for example healing all your troops in Kingshot.
 
-It looks at the phone screen before every tap and only presses the buttons the recipe allows. Everything else, like Speed Up or buttons that cost gems, is never touched.
+It looks at the phone screen before every tap and only presses the buttons the recipe allows. Everything else, like Speed Up, is never touched, and gems are only spent where a task says so (the VIP XP item at the Nomadic Merchant).
 
 ## Recipes
 
-| Command                              | What it does                                                |
-| ------------------------------------ | ----------------------------------------------------------- |
-| `just heal`                          | Heals your troops with the help of your allies              |
-| `just calibrate`                     | Measures how many troops one helping ally heals             |
-| `just intel`                         | Does the intel missions                                     |
-| `just terror-hunt 3`                 | Holds Terror rallies                                        |
-| `just collect-pet`                   | Pet skills, pet adventures and ally treasure                |
-| `just collect-conquest`              | Claims the Conquest idle income                             |
-| `just collect-backpack`              | Uses gems, hero XP and the small resource items             |
-| `just collect-daily`                 | Claims the daily missions                                   |
-| `just claim-mail`                    | Reads and claims all mail                                   |
-| `just claim-alliance`                | Alliance chests and contributions                           |
-| `just claim-freebies`                | Free items in the store                                     |
-| `just claim-vip`                     | The daily VIP claims                                        |
-| `just recruit`                       | The free hero recruits                                      |
-| `just shop`                          | Buys from the Nomadic Merchant with resources               |
-| `just morning`                       | All of the above, once                                      |
-| `just evening`                       | The morning round without the once a day tasks              |
-| `just collect-all`, `just claim-all` | Only the collect tasks, or only the claim tasks             |
-| `just run`                           | Keeps doing all of it through the day                       |
-| `just train-troops`                  | Collects finished troops and trains new ones                |
-| `just collect-water`                 | Collects the water on your island                           |
-| `just collect-online`                | Claims the Online Rewards chest                             |
-| `just mystic-trial`                  | Plays the Mystic Trials with your troop ratios              |
-| `just backpack-names`                | Saves a named picture of every item in the Backpack         |
-| `just runs`                          | Shows what ran and when                                     |
-| `just decisions`                     | Shows what the tasks read, tapped and decided, step by step |
+| Command                              | What it does                                                                        |
+| ------------------------------------ | ----------------------------------------------------------------------------------- |
+| `just heal`                          | Heals your troops with the help of your allies                                      |
+| `just calibrate`                     | Measures how many troops one helping ally heals                                     |
+| `just intel`                         | Does the intel missions                                                             |
+| `just terror-hunt 3`                 | Holds Terror rallies                                                                |
+| `just collect-pet`                   | Pet skills, pet adventures and ally treasure                                        |
+| `just claim-mail`                    | Reads and claims all mail                                                           |
+| `just claim-alliance`                | Alliance chests and contributions                                                   |
+| `just recruit`                       | The free hero recruits                                                              |
+| `just shop`                          | Buys from the Nomadic Merchant with resources                                       |
+| `just claim-freebies`                | Free items in the store                                                             |
+| `just claim-vip`                     | The daily VIP claims                                                                |
+| `just collect-daily`                 | Claims the daily missions                                                           |
+| `just collect-conquest`              | Claims the Conquest idle income                                                     |
+| `just collect-backpack`              | Uses gems, hero XP, the small resource items, the plain chests and VIP XP items     |
+| `just train-troops`                  | Collects finished troops and trains new ones                                        |
+| `just collect-water`                 | Collects the water on your island                                                   |
+| `just collect-online`                | Claims the Online Rewards chest                                                     |
+| `just mystic-trial`                  | Plays the Mystic Trials with your troop ratios                                      |
+| `just morning`                       | All of the tasks above, once                                                        |
+| `just evening`                       | The morning round without the Terror rallies, the store freebies and the VIP claims |
+| `just collect-all`, `just claim-all` | Four collect tasks, or four claim tasks                                             |
+| `just run`                           | Keeps doing all of it through the day                                               |
+| `just runs`                          | Shows what ran and when                                                             |
+| `just decisions`                     | Shows what the tasks read, tapped and decided, step by step                         |
+| `just backpack-names`                | Saves a named picture of every item in the Backpack                                 |
 
 Each task only takes its own arguments. One it does not know stops it before anything is pressed, and the message lists the ones it takes.
 
@@ -156,20 +156,6 @@ rewards:
 
 It recognises rewards by their picture, see [Name the rewards](#name-the-rewards).
 
-### Collect from the pets
-
-```sh
-just collect-pet
-```
-
-Start it on the world map. It opens the pet skills and uses **Scent Mastery** and **Gift of the King** when they are ready, or tells you how long their cooldown still is. Then it goes to **Beast Cage** and **Adventure**, where it:
-
-- presses **Claim All** when adventures have finished
-- presses **Hunt All** to send the pets out again (each hunt costs 10 stamina, so it stops hunting when the game says there is not enough)
-- opens **Ally Treasure** when it has a red bubble, presses every **Share**, and presses **Claim** under Alliance Shares while claims are left for today
-
-It prints everything it collected at the end, the same way as the intel task.
-
 ### Terror rallies
 
 ```sh
@@ -188,6 +174,20 @@ just terror-hunt 5 --storehouse --stamina 50
 - `--arch`, `--inf` and `--cav` put a hero in the rally by name. It opens **Select Heroes**, finds the hero by its picture and presses **Change**. The pictures are in `assets/heroes`, named after the hero. A hero it has no picture of yet is looked up once through **View** and saved there. With heroes named, it waits for the rally to come back before it starts the next one, because the heroes have to be home again.
 - Without heroes it starts the next rally right away, as long as a march is free.
 - A rally costs 25 stamina. `--storehouse`, `--embrace` and `--stamina 50` refill it the same way as for the intel task; without them it stops when the stamina runs out.
+
+### Collect from the pets
+
+```sh
+just collect-pet
+```
+
+Start it on the world map. It opens the pet skills and uses **Scent Mastery** and **Gift of the King** when they are ready, or tells you how long their cooldown still is. Then it goes to **Beast Cage** and **Adventure**, where it:
+
+- presses **Claim All** when adventures have finished
+- presses **Hunt All** to send the pets out again (each hunt costs 10 stamina, so it stops hunting when the game says there is not enough)
+- opens **Ally Treasure** when it has a red bubble, presses every **Share**, and presses **Claim** under Alliance Shares while claims are left for today
+
+It prints everything it collected at the end, the same way as the intel task.
 
 ### Claim the mail
 
@@ -217,37 +217,6 @@ just recruit
 ```
 
 Start it on the world map. It opens **Heroes** and **Recruit Heroes** and presses every green **Free** recruit button. It never presses the yellow buttons that cost keys. When nothing is free it tells you how long until the next one.
-
-### Morning round
-
-```sh
-just morning --pan --gourmet --embrace
-```
-
-Start it on the world map. It runs twelve tasks one after the other and returns to the world map between them:
-
-1. the intel missions (`--pan`, `--gourmet`, `--embrace` and `--stamina 50` work as for the intel task; `--gourmet` is the same as `--storehouse`)
-2. two Terror rallies with Diana as archer and Fahd as cavalry (change with a number, `--arch`, `--cav`, `--inf` and `--level`)
-3. all the mail
-4. the alliance chests and contributions
-5. the Nomadic Merchant, including the VIP XP item for gems
-6. the free hero recruits
-7. the pet skills, pet adventures and ally treasure
-8. the free items in the store
-9. the VIP claims
-10. the Conquest idle income (only with a red dot, or with `--force`)
-11. the Backpack (gems, hero XP, grey and green resources, or the colours from `--rss`)
-12. the daily missions, last so it also claims what the other steps completed
-
-If one task stops early, the round carries on with the next one. The tasks that only make sense once a day (the Terror rallies, the store freebies and the VIP claims) are left out when they already went well today, see [What ran and when](#what-ran-and-when).
-
-### Evening round
-
-```sh
-just evening --pan --gourmet --embrace
-```
-
-The morning round without the once a day tasks: no Terror rallies, no store freebies and no VIP claims. It runs the other nine in the same order and takes the same arguments.
 
 ### Nomadic Merchant
 
@@ -315,6 +284,153 @@ It knows the items by their pictures in `assets/backpack` and only opens the one
 
 The picture only decides which tiles get opened. Using items cannot be undone, so before it presses **Use** the name it reads from the open item must be on the list above, and for resources the colour of the tile that is actually open must match the size in that name. Otherwise the item is left alone. Try `--dry-run` first: it opens and closes the items and prints `would use all: ...` for each one, without ever pressing **Use**.
 
+### In the town: troops, water and the online reward
+
+```sh
+just train-troops
+just collect-water
+just collect-online
+```
+
+These start on the world map or the town map and end on the world map. They find their way through the list at the side of the town map.
+
+- `train-troops` goes through the Barracks, the Stable and the Range. Where nothing is training it presses **Train** with the tier and amount the game suggests, which also collects the finished troops. It never presses **Finish** or **Speedups**.
+- `collect-water` goes to your island and taps the water above the Fountain of Life. It does not collect from the Purifier yet.
+- `collect-online` opens the Online Rewards chest at the storehouse when it is ready, and tells you when the next one is.
+
+### Mystic Trial
+
+```sh
+just mystic-trial
+```
+
+Start it on the world map or the town map. In every trial that is open today it presses **Challenge**, sets your troop ratio with **Balance**, presses **Deploy** and skips the fight, until that trial has no attempts left. A won fight moves on to the next stage, a lost one is tried again.
+
+The ratios are infantry/cavalry/archer in `.env`, one line per trial. A trial without a line is skipped:
+
+```
+TRIAL_KNOWLEDGE_NEXUS=50/10/40
+TRIAL_MOLTEN_FORT=60/15/25
+```
+
+It only deploys when the Troop Ratio line on the screen shows exactly your numbers. In the rounds it is played once a day, see [Evening round](#evening-round).
+
+### Morning round
+
+```sh
+just morning --pan --gourmet --embrace
+```
+
+Start it on the world map. It runs sixteen tasks one after the other and returns to the world map between them:
+
+1. the intel missions (`--pan`, `--gourmet`, `--embrace` and `--stamina 50` work as for the intel task; `--gourmet` is the same as `--storehouse`)
+2. two Terror rallies with Diana as archer and Fahd as cavalry (change with a number, `--arch`, `--cav`, `--inf` and `--level`)
+3. all the mail
+4. the alliance chests and contributions
+5. the Nomadic Merchant, including the VIP XP item for gems
+6. the free hero recruits
+7. the pet skills, pet adventures and ally treasure
+8. the free items in the store
+9. the VIP claims
+10. the Conquest idle income (only with a red dot, or with `--force`)
+11. the Backpack (gems, hero XP, grey and green resources or the colours from `--rss`, the plain chests and VIP XP items)
+12. troop training in the Barracks, the Stable and the Range
+13. the water on your island
+14. the Online Rewards chest
+15. the Mystic Trials
+16. the daily missions, last so it also claims what the other steps completed
+
+If one task stops early, the round carries on with the next one. The tasks that only make sense once a day (the Terror rallies, the store freebies, the VIP claims and the Mystic Trials) are left out when they already went well today, see [What ran and when](#what-ran-and-when).
+
+### Evening round
+
+```sh
+just evening --pan --gourmet --embrace
+```
+
+The morning round without the Terror rallies, the store freebies and the VIP claims. It runs the other thirteen in the same order and takes the same arguments, except the ones for the Terror rallies.
+
+The Mystic Trials are in both rounds, but only played once a day: when the run log shows they already went well today, the round leaves them out and says so. A trial that still has attempts because the task stopped early is picked up by the next round.
+
+### Collect all and claim all
+
+```sh
+just collect-all
+just claim-all
+```
+
+`collect-all` runs the pets, Conquest, the Backpack and the daily missions, one after the other. `claim-all` runs the mail, the alliance, the store freebies and VIP. The town tasks and the Mystic Trials are not part of either. Both start on the world map, and the arguments of the single tasks still work, for example `just collect-all --force --rss grey,green,blue`.
+
+### Keep running all day
+
+```sh
+just run --pan --gourmet --embrace
+```
+
+Start it on the world map and leave it. It starts every task that is due, in the same order as the morning round, and starts each one again when it is due the next time. The very first time that is all of them. In between it sleeps and tells you until when.
+
+| Task                                                                      | Runs again                                              |
+| ------------------------------------------------------------------------- | ------------------------------------------------------- |
+| recruit                                                                   | when the next free recruit is ready                     |
+| shop                                                                      | when the merchant refreshes                             |
+| collect-online                                                            | when the next chest is ready, at least 15 minutes apart |
+| claim-mail, claim-alliance                                                | every 2 hours                                           |
+| intel                                                                     | every 3 hours                                           |
+| collect-pet, collect-conquest, collect-daily, train-troops, collect-water | every 4 hours                                           |
+| collect-backpack                                                          | every 12 hours                                          |
+| claim-freebies, claim-vip, terror-hunt, mystic-trial                      | once a day                                              |
+
+```sh
+just run --only recruit,shop
+just run --skip terror-hunt,intel
+```
+
+`--only` runs just the tasks you list, `--skip` leaves some out. The other arguments work as for the morning round. Keep the phone unlocked on the game, on the cable, and keep the Mac awake.
+
+A task that meets a screen it does not know stops, saves a picture of that screen in `build/`, and gets a new turn 30 minutes later. When you stop and start `just run` again, it carries on with the schedule it had: nothing runs before it is due.
+
+### What ran and when
+
+```sh
+just runs
+just runs 100
+```
+
+```
+2026-11-21 17:23  claim-vip            9s  ok  next 2026-11-22 01:00
+2026-11-21 17:24  claim-freebies     188s  ok  next 2026-11-22 01:00
+2026-11-21 17:28  recruit             51s  failed: did not recognise the screen, see build/recruit-lost.png  next 2026-11-21 17:58
+2026-11-21 17:32  recruit             25s  ok  next 2026-11-21 22:21
+```
+
+Every run is saved in `runs.db`, with how long it took, how it went and when the task is due again.
+
+- The once a day tasks (terror-hunt, claim-freebies, claim-vip, mystic-trial) are left out of the rounds when they already went well since the game's daily reset. The reset is 00:00 UTC; change it with `DAY_RESET_UTC_HOUR`.
+- `just run` reads its schedule from here when it starts.
+- Add `--again` to a round or to `just run` to run everything now anyway.
+- A task you start by itself always runs.
+
+### Why did it do that?
+
+```sh
+just decisions
+just decisions 200
+just decisions 200 collect-pet
+just decisions 50 "left alone"
+```
+
+Every task writes down what it does while it runs, in `decisions.log`: each time it reads the screen (with the texts it read and where they are), each tap, what it concluded, and every line it printed. The number is how many lines to show, and words after it keep only the lines that contain them.
+
+```
+22:47:29 collect-backpack  read the screen: Backpack @92,77 | Resources @49,118 | 1,571 @176,433 | ...
+22:47:30 collect-backpack  not opened row=500 column=4 item=1m wood (secured) why=it is purple and only grey, green may be used
+22:47:31 collect-backpack  opening to use row=407 column=4 item=1k wood
+22:47:31 collect-backpack  tapped x=343 y=407
+22:47:33 collect-backpack  would use all row=407 column=4 item=1k wood pictured=1k wood before=green open=green
+```
+
+Look here when a task did something you did not expect, or left something alone: the texts show what it could and could not read at that moment. The file starts over when it gets large.
+
 ### Name everything in the backpack
 
 ```sh
@@ -349,115 +465,6 @@ The tasks print what they collected. They recognise each reward by its picture i
 
 The same reward can have more than one picture: add `~2` to the name (`speedup~2.png`) and it prints under the same name.
 
-### In the town: troops, water and the online reward
-
-```sh
-just train-troops
-just collect-water
-just collect-online
-```
-
-These start on the world map or the town map and end on the world map. They find their way through the list at the side of the town map.
-
-- `train-troops` goes through the Barracks, the Stable and the Range. Where nothing is training it presses **Train** with the tier and amount the game suggests, which also collects the finished troops. It never presses **Finish** or **Speedups**.
-- `collect-water` goes to your island and taps the water above the Fountain of Life.
-- `collect-online` opens the Online Rewards chest at the storehouse when it is ready, and tells you when the next one is.
-
-### Mystic Trial
-
-```sh
-just mystic-trial
-```
-
-In every trial that is open today it presses **Challenge**, sets your troop ratio with **Balance**, presses **Deploy** and skips the fight, until that trial has no attempts left. A won fight moves on to the next stage, a lost one is tried again.
-
-The ratios are infantry/cavalry/archer in `.env`, one line per trial. A trial without a line is skipped:
-
-```
-TRIAL_KNOWLEDGE_NEXUS=50/10/40
-TRIAL_MOLTEN_FORT=60/15/25
-```
-
-It only deploys when the Troop Ratio line on the screen shows exactly your numbers.
-
-### Collect all and claim all
-
-```sh
-just collect-all
-just claim-all
-```
-
-`collect-all` runs the pets, Conquest, the Backpack and the daily missions, one after the other. `claim-all` runs the mail, the alliance, the store freebies and VIP. Both start on the world map, and the arguments of the single tasks still work, for example `just collect-all --force --rss grey,green,blue`.
-
-### Keep running all day
-
-```sh
-just run --pan --gourmet --embrace
-```
-
-Start it on the world map and leave it. It starts every task once, in the same order as the morning round, and then starts each one again when it is due. In between it sleeps and tells you until when.
-
-| Task                                         | Runs again                          |
-| -------------------------------------------- | ----------------------------------- |
-| recruit                                      | when the next free recruit is ready |
-| shop                                         | when the merchant refreshes         |
-| claim-mail, claim-alliance                   | every 2 hours                       |
-| intel                                        | every 3 hours                       |
-| collect-pet, collect-conquest, collect-daily | every 4 hours                       |
-| collect-backpack                             | every 12 hours                      |
-| claim-freebies, claim-vip, terror-hunt       | once a day                          |
-
-```sh
-just run --only recruit,shop
-just run --skip terror-hunt,intel
-```
-
-`--only` runs just the tasks you list, `--skip` leaves some out. The other arguments work as for the morning round. Keep the phone unlocked on the game, on the cable, and keep the Mac awake.
-
-A task that meets a screen it does not know stops, saves a picture of that screen in `build/`, and gets a new turn 30 minutes later. When you stop and start `just run` again, it carries on with the schedule it had: nothing runs before it is due.
-
-### What ran and when
-
-```sh
-just runs
-just runs 100
-```
-
-```
-2026-11-21 17:23  claim-vip            9s  ok  next 2026-11-22 01:00
-2026-11-21 17:24  claim-freebies     188s  ok  next 2026-11-22 01:00
-2026-11-21 17:28  recruit             51s  failed: did not recognise the screen, see build/recruit-lost.png  next 2026-11-21 17:58
-2026-11-21 17:32  recruit             25s  ok  next 2026-11-21 22:21
-```
-
-Every run is saved in `runs.db`, with how long it took, how it went and when the task is due again.
-
-- The once a day tasks (terror-hunt, claim-freebies, claim-vip) are left out of the rounds when they already went well since the game's daily reset. The reset is 00:00 UTC; change it with `DAY_RESET_UTC_HOUR`.
-- `just run` reads its schedule from here when it starts.
-- Add `--again` to a round or to `just run` to run everything now anyway.
-- A task you start by itself always runs.
-
-### Why did it do that?
-
-```sh
-just decisions
-just decisions 200
-just decisions 200 collect-pet
-just decisions 50 "left alone"
-```
-
-Every task writes down what it does while it runs, in `decisions.log`: each time it reads the screen (with the texts it read and where they are), each tap, what it concluded, and every line it printed. The number is how many lines to show, and words after it keep only the lines that contain them.
-
-```
-22:47:29 collect-backpack  read the screen: Backpack @92,77 | Resources @49,118 | 1,571 @176,433 | ...
-22:47:30 collect-backpack  not opened row=500 column=4 item=1m wood (secured) why=it is purple and only grey, green may be used
-22:47:31 collect-backpack  opening to use row=407 column=4 item=1k wood
-22:47:31 collect-backpack  tapped x=343 y=407
-22:47:33 collect-backpack  would use all row=407 column=4 item=1k wood pictured=1k wood before=green open=green
-```
-
-Look here when a task did something you did not expect, or left something alone: the texts show what it could and could not read at that moment. The file starts over when it gets large.
-
 ### Without just
 
 `just <recipe>` is short for `deno task start <recipe>`. If you do not have [just](https://just.systems) (it comes with `nix develop`), this does the same:
@@ -474,7 +481,7 @@ just check
 just test
 ```
 
-The tests need no phone. Run all three after every change. A new recipe goes in `recipes/<name>/recipe.ts` and is added to `src/recipes.ts` and the `justfile`.
+The tests need no phone. Run all three after every change. A new recipe goes in `recipes/<name>/` and is added to `src/recipes.ts` and the `justfile`, and to `recipes/all/steps.ts` when the rounds should run it.
 
 ## What you need
 
@@ -540,7 +547,7 @@ Developer Mode lets your Mac install the helper app on the phone. You only turn 
 ## Every time you use it
 
 1. Plug in the iPhone and unlock it.
-2. Open the game on the right screen, for Kingshot the **Heal Injured** window.
+2. Open the game on the screen the recipe starts from: the world map for nearly all of them.
 3. In Terminal:
    ```sh
    cd iphone-tapper
@@ -548,7 +555,7 @@ Developer Mode lets your Mac install the helper app on the phone. You only turn 
    just heal
    ```
 4. Leave the phone alone. You will see "Automation Running" on the phone, that is normal.
-5. Press **Ctrl + C** in Terminal to stop. It also stops by itself when there has been nothing to press for 10 minutes.
+5. Press **Ctrl + C** in Terminal to stop. Each recipe also stops by itself when it is done, and healing when there has been nothing to press for 10 minutes.
 
 **Tip:** set Settings > Display & Brightness > Auto-Lock to **Never** while it runs. When the phone locks, it stops accepting taps.
 
@@ -622,25 +629,25 @@ The recipes are made on an iPhone 17 Pro. On other models the buttons sit elsewh
 
 ## When something goes wrong
 
-| What you see                                       | What to do                                                                                                                                                    |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `command not found: deno`                          | Run `nix develop` first.                                                                                                                                      |
-| `no iphone found`                                  | Plug in the cable, unlock the phone, try again.                                                                                                               |
-| `is not reachable`                                 | Unlock the phone and keep it unlocked while starting.                                                                                                         |
-| `no apple development certificate found`           | Do step 3 of the first time setup.                                                                                                                            |
-| `several developer teams found`                    | Create the settings file and copy one of the `TEAM_ID=` lines it shows into it.                                                                               |
-| `the phone stopped accepting taps`                 | The phone locked. Unlock it, set Auto-Lock to Never and start again.                                                                                          |
-| `lost the connection to the phone`                 | The cable came loose or the phone locked. Plug it in, unlock it and start again.                                                                              |
-| `xcodebuild failed, see build.log`                 | Check that you are signed in to Xcode and that the phone is unlocked.                                                                                         |
-| Starting takes minutes                             | The phone is connected over Wi-Fi. Plug in the cable.                                                                                                         |
-| `webdriveragent did not start`                     | Unlock the phone, run `just rebuild`.                                                                                                                         |
-| `accurate text recognition is not answering`       | The Mac cannot read small text right now. Healing still works, but it cannot check the amount box or count allies well. Restarting the Mac may bring it back. |
-| `did not recognise the screen, see build/...`      | The task met a screen it does not know. Open the picture it names to see where it was, put the game back on the world map and start again.                    |
-| `start on the world map`                           | The game is on another screen, often because the task before stopped early. Go back to the world map and start again.                                         |
-| `unknown argument`                                 | That task does not take that argument. The message lists the ones it does.                                                                                    |
-| `an item panel did not close, stopping to be safe` | Close the open item in the Backpack by hand and start `just backpack-names` again.                                                                            |
-| The phone says **Untrusted Developer**             | Settings > General > VPN & Device Management, tap your Apple ID and **Trust**.                                                                                |
-| It worked last week but not today                  | Run `just rebuild` to reinstall the helper app.                                                                                                               |
+| What you see                                                                                              | What to do                                                                                                                                                    |
+| --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `command not found: deno`                                                                                 | Run `nix develop` first.                                                                                                                                      |
+| `no iphone found`                                                                                         | Plug in the cable, unlock the phone, try again.                                                                                                               |
+| `is not reachable`                                                                                        | Unlock the phone and keep it unlocked while starting.                                                                                                         |
+| `no apple development certificate found`                                                                  | Do step 3 of the first time setup.                                                                                                                            |
+| `several developer teams found`                                                                           | Create the settings file and copy one of the `TEAM_ID=` lines it shows into it.                                                                               |
+| `the phone stopped accepting taps`                                                                        | The phone locked. Unlock it, set Auto-Lock to Never and start again.                                                                                          |
+| `lost the connection to the phone`                                                                        | The cable came loose or the phone locked. Plug it in, unlock it and start again.                                                                              |
+| `xcodebuild failed, see build.log`                                                                        | Check that you are signed in to Xcode and that the phone is unlocked.                                                                                         |
+| Starting takes minutes                                                                                    | The phone is connected over Wi-Fi. Plug in the cable.                                                                                                         |
+| `webdriveragent did not start`                                                                            | Unlock the phone, run `just rebuild`.                                                                                                                         |
+| `accurate text recognition is not answering`                                                              | The Mac cannot read small text right now. Healing still works, but it cannot check the amount box or count allies well. Restarting the Mac may bring it back. |
+| `did not recognise the screen, see build/...`                                                             | The task met a screen it does not know. Open the picture it names to see where it was, put the game back on the world map and start again.                    |
+| `start on the world map`                                                                                  | The game is on another screen, often because the task before stopped early. Go back to the world map and start again.                                         |
+| `unknown argument`                                                                                        | That task does not take that argument. The message lists the ones it does.                                                                                    |
+| `an item did not close`, `an item is open when it should not be` or `the backpack list did not come back` | A Backpack task stopped to be safe. Close the open item in the Backpack by hand, go back to the world map and start it again.                                 |
+| The phone says **Untrusted Developer**                                                                    | Settings > General > VPN & Device Management, tap your Apple ID and **Trust**.                                                                                |
+| It worked last week but not today                                                                         | Run `just rebuild` to reinstall the helper app.                                                                                                               |
 
 **Tip for direnv users:** run `direnv allow` once and the tools load by themselves when you enter the folder, so you can skip `nix develop`.
 

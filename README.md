@@ -9,13 +9,13 @@ It looks at the phone screen before every tap and only presses the buttons the r
 ### Heal troops
 
 ```sh
-deno task heal
+just heal
 ```
 
 Start the recipe on the world map or with the **Heal Injured** window open. If the window is not open, it presses the green injured button (the plus with a percentage) to open it. It presses **Heal**, then **Help**, then **Heal** again, until all your troops are healed.
 
-| It presses **Heal** | Then **Help** |
-| --- | --- |
+| It presses **Heal**                                                                         | Then **Help**                                                                                              |
+| ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | <img src="docs/images/heal.png" width="280" alt="Heal Injured window with the Heal button"> | <img src="docs/images/help.png" width="280" alt="Heal Injured window while healing, with the Help button"> |
 
 If the button shows **Speed Up** or anything else, it waits until **Heal** comes back.
@@ -23,7 +23,7 @@ If the button shows **Speed Up** or anything else, it waits until **Heal** comes
 **It heals more when more allies help.** It starts with 60 Infantry per round, or more if you tell it how many allies are online:
 
 ```sh
-deno task heal --allies 5
+just heal --allies 5
 ```
 
 On the first round and every 10th round after that it reads the "5 Allies have helped you" message and sizes the batch to that. If it could not read that message for a while and 10 heals in a row finish within 3 seconds of Help, it tries one ally more. Slower heals mean the allies are at their limit, so it stops growing. It reads the tier badge (XI or X) on the top troop and uses the right amount per ally: 60 for XI and 140 for X. How much one ally heals is different for every player, so change `TROOPS_PER_ALLY_XI` and `TROOPS_PER_ALLY_X` in the [settings](#settings) to match yours.
@@ -43,7 +43,7 @@ Use this to find your own `TROOPS_PER_ALLY_XI` and `TROOPS_PER_ALLY_X` instead o
 1. Open the **Heal Injured** window when allies are online. The tier you want to measure must be one of the three troops at the top.
 2. Start it:
    ```sh
-   deno task calibrate
+   just calibrate
    ```
 3. It heals 10 Infantry, then 20, then 30, and so on, pressing **Help** each time and reading how many allies helped:
    ```
@@ -59,13 +59,13 @@ Use this to find your own `TROOPS_PER_ALLY_XI` and `TROOPS_PER_ALLY_X` instead o
 It starts small on purpose. To get to the limit faster, start higher, and use a smaller step for a more exact result:
 
 ```sh
-deno task calibrate --start 300 --increment 5
+just calibrate --start 300 --increment 5
 ```
 
 It measures tier XI unless you name another tier. It finds the first troop with that badge among the three at the top of the window, so you can measure X while XI troops are still injured:
 
 ```sh
-deno task calibrate --tier X --start 100
+just calibrate --tier X --start 100
 ```
 
 A reading that contradicts what already failed is thrown away: if 66 per assist failed, a later heal that seems to finish at 78 per assist means the assist count was read wrong.
@@ -77,7 +77,7 @@ The short forms `-t`, `-s`, `-i` and `-a` work for `--tier`, `--start`, `--incre
 Add `--save` to write the safer value (the result minus one) to `.env`, so the heal recipe uses it from the next start:
 
 ```sh
-deno task calibrate --start 300 --save
+just calibrate --start 300 --save
 ```
 
 It only presses **Heal** when the amount box shows the amount it typed. If the Heal button is not showing at the start, it waits up to 30 seconds for it.
@@ -85,24 +85,24 @@ It only presses **Heal** when the amount box shows the amount it typed. If the H
 ### Intel missions
 
 ```sh
-deno task intel
+just intel
 ```
 
 Open the world map (or the Intel Mission screen) and start it. For every marker it presses **View** and then does what the mission needs:
 
-| Marker | What it presses |
-| --- | --- |
-| Tent | **Rescue** |
+| Marker | What it presses                                               |
+| ------ | ------------------------------------------------------------- |
+| Tent   | **Rescue**                                                    |
 | Animal | **Attack**, then **Deploy** with the troops the game suggests |
-| Fight | **Conquer**, then **Fight** with the squad already set |
+| Fight  | **Conquer**, then **Fight** with the squad already set        |
 
 It does not wait for marches: it sends one and takes the next marker right away. When no marker is left it waits a moment for the marches, presses **Claim All**, and carries on with any new markers that show up. It also collects before it stops for lack of stamina.
 
 Animals need a free march. When the march list on the world map shows all marches in use (for example 6/6), it waits up to a minute for one to come back, and skips that animal if none does. Tents and fights do not need a march.
 
 ```sh
-deno task intel --pan
-deno task intel --storehouse --embrace --stamina 50
+just intel --pan
+just intel --storehouse --embrace --stamina 50
 ```
 
 - `--pan` presses the Pan skill once at the start, if it is available.
@@ -133,7 +133,7 @@ open assets/rewards
 ### Collect from the pets
 
 ```sh
-deno task collect-pet
+just collect-pet
 ```
 
 Start it on the world map. It opens the pet skills and uses **Scent Mastery** and **Gift of the King** when they are ready, or tells you how long their cooldown still is. Then it goes to **Beast Cage** and **Adventure**, where it:
@@ -147,15 +147,15 @@ It prints everything it collected at the end, the same way as the intel task.
 ### Terror rallies
 
 ```sh
-deno task terror-hunt 3
+just terror-hunt 3
 ```
 
 Start it on the world map. For each rally it opens the search, picks **Terror** at level 8, presses **Search**, **Rally**, **Hold a rally** (with the rally time the game has selected) and **Deploy**. The number is how many rallies to hold; without it, it holds one.
 
 ```sh
-deno task terror-hunt 3 --level 7
-deno task terror-hunt 2 --cav fahd --arch diana
-deno task terror-hunt 5 --storehouse --stamina 50
+just terror-hunt 3 --level 7
+just terror-hunt 2 --cav fahd --arch diana
+just terror-hunt 5 --storehouse --stamina 50
 ```
 
 - `--level 7` hunts another level.
@@ -166,7 +166,7 @@ deno task terror-hunt 5 --storehouse --stamina 50
 ### Claim the mail
 
 ```sh
-deno task claim-mail
+just claim-mail
 ```
 
 Start it on the world map. It opens the mail, goes through the five tabs (Wars, Alliance, System, Reports, Starred) and presses **Read & Claim All** on each. It never presses **Delete Read**. At the end it prints what it claimed.
@@ -174,7 +174,7 @@ Start it on the world map. It opens the mail, goes through the five tabs (Wars, 
 ### Claim from the alliance
 
 ```sh
-deno task claim-alliance
+just claim-alliance
 ```
 
 Start it on the world map. It opens **Alliance**, then:
@@ -187,7 +187,7 @@ It never presses the gem Contribute button or **Go**. At the end it prints what 
 ### Free hero recruits
 
 ```sh
-deno task recruit
+just recruit
 ```
 
 Start it on the world map. It opens **Heroes** and **Recruit Heroes** and presses every green **Free** recruit button. It never presses the yellow buttons that cost keys. When nothing is free it tells you how long until the next one.
@@ -195,7 +195,7 @@ Start it on the world map. It opens **Heroes** and **Recruit Heroes** and presse
 ### Morning round
 
 ```sh
-deno task morning --pan --gourmet --embrace
+just morning --pan --gourmet --embrace
 ```
 
 Start it on the world map. It runs twelve tasks one after the other and returns to the world map between them:
@@ -218,8 +218,8 @@ If one task stops early, the round carries on with the next one.
 ### Nomadic Merchant
 
 ```sh
-deno task shop
-deno task shop --buy-vip
+just shop
+just shop --buy-vip
 ```
 
 Start it on the world map. It opens **Shop** and buys every Nomadic Merchant item that costs resources (bread, wood, stone, iron). When only gem items are left it presses **Free Refresh** and starts over, until there is no free refresh left.
@@ -229,7 +229,7 @@ It never buys with gems, with one exception: with `--buy-vip` it also buys the V
 ### Free items in the store
 
 ```sh
-deno task claim-freebies
+just claim-freebies
 ```
 
 Start it on the world map. It opens the store (the shopping cart), opens every tab that has a red dot, and scrolls down through it looking for things marked **Free**, **Claimable** or **Claim**. It claims those. It never presses a button with a price on it, and it skips a label that sits next to a price.
@@ -237,7 +237,7 @@ Start it on the world map. It opens the store (the shopping cart), opens every t
 ### VIP claims
 
 ```sh
-deno task claim-vip
+just claim-vip
 ```
 
 Start it on the world map. It opens the VIP screen and claims the **daily free bundle** and the **daily sign-in chest**, then uses the VIP XP items you own. It never presses **Buy & Use**.
@@ -245,7 +245,7 @@ Start it on the world map. It opens the VIP screen and claims the **daily free b
 ### Daily missions
 
 ```sh
-deno task collect-daily
+just collect-daily
 ```
 
 Start it on the world map. It opens the daily missions (the scroll icon), goes to the **Daily** tab and presses **Claim All** until nothing is left.
@@ -253,8 +253,8 @@ Start it on the world map. It opens the daily missions (the scroll icon), goes t
 ### Conquest idle income
 
 ```sh
-deno task collect-conquest
-deno task collect-conquest --force
+just collect-conquest
+just collect-conquest --force
 ```
 
 Start it on the world map. When the **Conquest** button has a red dot, it opens Conquest and claims the idle income. Without the dot it does nothing, unless you add `--force`.
@@ -262,8 +262,8 @@ Start it on the world map. When the **Conquest** button has a red dot, it opens 
 ### Backpack
 
 ```sh
-deno task collect-backpack
-deno task collect-backpack --rss grey,green,blue
+just collect-backpack
+just collect-backpack --rss grey,green,blue
 ```
 
 Start it on the world map. It opens the **Backpack** and uses, a whole stack at a time:
@@ -277,62 +277,60 @@ Start it on the world map. It opens the **Backpack** and uses, a whole stack at 
 ### Collect all and claim all
 
 ```sh
-deno task collect-all
-deno task claim-all
+just collect-all
+just claim-all
 ```
 
-`collect-all` runs the pets, Conquest, the Backpack and the daily missions, one after the other. `claim-all` runs the mail, the alliance, the store freebies and VIP. Both start on the world map, and the arguments of the single tasks still work, for example `deno task collect-all --force --rss grey,green,blue`.
+`collect-all` runs the pets, Conquest, the Backpack and the daily missions, one after the other. `claim-all` runs the mail, the alliance, the store freebies and VIP. Both start on the world map, and the arguments of the single tasks still work, for example `just collect-all --force --rss grey,green,blue`.
 
 ### Keep running all day
 
 ```sh
-deno task run --pan --gourmet --embrace
+just run --pan --gourmet --embrace
 ```
 
 Start it on the world map and leave it. It starts every task once, in the same order as the morning round, and then starts each one again when it is due. In between it sleeps and tells you until when.
 
-| Task | Runs again |
-| --- | --- |
-| recruit | when the next free recruit is ready |
-| shop | when the merchant refreshes |
-| claim-mail, claim-alliance | every 2 hours |
-| intel | every 3 hours |
-| collect-pet, collect-conquest, collect-daily | every 4 hours |
-| claim-freebies | every 6 hours |
-| claim-vip, collect-backpack | every 12 hours |
-| terror-hunt | once a day |
+| Task                                         | Runs again                          |
+| -------------------------------------------- | ----------------------------------- |
+| recruit                                      | when the next free recruit is ready |
+| shop                                         | when the merchant refreshes         |
+| claim-mail, claim-alliance                   | every 2 hours                       |
+| intel                                        | every 3 hours                       |
+| collect-pet, collect-conquest, collect-daily | every 4 hours                       |
+| collect-backpack                             | every 12 hours                      |
+| claim-freebies, claim-vip, terror-hunt       | once a day                          |
 
 ```sh
-deno task run --only recruit,shop
-deno task run --skip terror-hunt,intel
+just run --only recruit,shop
+just run --skip terror-hunt,intel
 ```
 
 `--only` runs just the tasks you list, `--skip` leaves some out. The other arguments work as for the morning round. Keep the phone unlocked on the game, on the cable, and keep the Mac awake. If a task finds another screen, it stops and gets its next turn later.
 
-### Shortcuts with just
-
-If you have [just](https://just.systems) (it comes with `nix develop`), these do the same:
+### What ran and when
 
 ```sh
-just heal --allies 5
-just heal-batchsize-calibrate --start 300 --increment 5 --save
-just intel --pan --storehouse
-just collect-pet
-just terror-hunt 2 --cav fahd
-just claim-mail
-just claim-alliance
-just recruit
-just morning --pan --gourmet --embrace
-just run --skip terror-hunt
-just collect-all
-just claim-all
-just shop --buy-vip
-just claim-freebies
-just claim-vip
-just collect-daily
-just collect-conquest --force
-just collect-backpack --rss grey,green
-just rebuild
+just runs
+just runs 100
+```
+
+Every run is saved in `runs.db`. The once a day tasks (terror-hunt, claim-freebies, claim-vip) are skipped by the rounds when they already went well since the daily reset (00:00 UTC, change with `DAY_RESET_UTC_HOUR`), and `just run` picks up its schedule where it left off. Add `--again` to run everything anyway. A task you start by itself always runs.
+
+### Without just
+
+`just <recipe>` is short for `deno task start <recipe>`. If you do not have [just](https://just.systems) (it comes with `nix develop`), this does the same:
+
+```sh
+deno task start heal --allies 5
+```
+
+### Working on the code
+
+```sh
+just fmt
+just check
+just test
 ```
 
 ## What you need
@@ -376,7 +374,7 @@ Do this once.
 
 6. **Start a recipe**
    ```sh
-   deno task heal
+   just heal
    ```
    The first start installs a helper app on your phone. This takes a few minutes. After that, starting is quick.
 
@@ -404,7 +402,7 @@ Developer Mode lets your Mac install the helper app on the phone. You only turn 
    ```sh
    cd iphone-tapper
    nix develop
-   deno task heal
+   just heal
    ```
 4. Leave the phone alone. You will see "Automation Running" on the phone, that is normal.
 5. Press **Ctrl + C** in Terminal to stop. It also stops by itself when there has been nothing to press for 10 minutes.
@@ -413,11 +411,11 @@ Developer Mode lets your Mac install the helper app on the phone. You only turn 
 
 ## Free or paid Apple account
 
-| | Free Apple ID | Paid Apple Developer ($99/year) |
-| --- | --- | --- |
-| Works | Yes | Yes |
-| Helper app lasts | 7 days, then run `deno task rebuild` | 1 year |
-| Trust prompt on the phone | Once | No |
+|                           | Free Apple ID                   | Paid Apple Developer ($99/year) |
+| ------------------------- | ------------------------------- | ------------------------------- |
+| Works                     | Yes                             | Yes                             |
+| Helper app lasts          | 7 days, then run `just rebuild` | 1 year                          |
+| Trust prompt on the phone | Once                            | No                              |
 
 ## Settings
 
@@ -430,63 +428,63 @@ open -e .env
 
 Change a value, save, and start again.
 
-| Setting | What it does | Default |
-| --- | --- | --- |
-| `TEAM_ID` | Which Apple developer team signs the helper app | Found automatically |
-| `BUNDLE_ID` | Name of the helper app on the phone | Made from your team |
-| `INTERVAL_MS` | Pause after each tap, in milliseconds | `0` |
-| `MAX_IDLE_SECONDS` | Stop when there has been nothing to press this long | `600` |
-| `CLOCK` | Time format in the output: `24h` (14:52:08) or `12h` (2:52:08 PM) | `24h` |
-| `TROOPS_PER_ALLY_XI` | Heal: how many tier XI troops one helping ally heals | `60` |
-| `TROOPS_PER_ALLY_X` | Heal: how many tier X troops one helping ally heals | `140` |
-| `TROOPS_PER_ALLY` | Heal: troops per ally for any other tier | `60` |
-| `CALIBRATE_START` | Heal: how many troops the first measuring heal uses (same as `--start`) | `10` |
-| `CALIBRATE_STEP` | Heal: how many troops each measuring heal adds (same as `--increment`) | `10` |
-| `CALIBRATE_TIER` | Heal: which tier to measure, `XI` or `X` (same as `--tier`) | `XI` |
-| `CALIBRATE_MAX` | Heal: stop measuring at this many troops | `2000` |
-| `CALIBRATE_MAX_ROUNDS` | Heal: give up measuring, and give up confirming, after this many heals | `40` |
-| `CALIBRATE_SETTLE_SECONDS` | Heal: keep reading the assist message this long after a heal finished | `2` |
-| `CALIBRATE_LEFT_SECONDS` | Heal: a heal with this many seconds or fewer left on its timer after the assists does not count as finished | `15` |
-| `CALIBRATE_CONFIRM` | Heal: how many finished heals confirm the result | `5` |
-| `HELP_DELAY_MS` | Heal: pause between pressing Heal and pressing Help, in milliseconds | `100` |
-| `ALLY_TIMEOUT_SECONDS` | Heal: at the smallest batch, stop when a heal has not finished this long after Help | `240` |
-| `CANCEL_AFTER_SECONDS` | Heal: cancel a bigger heal that has not finished this long after Help | `10` |
-| `START_ALLIES` | Heal: how many allies to size the first batch for (same as `--allies`) | `1` |
-| `GROW_AFTER_ROUNDS` | Heal: try one ally more after this many heals in a row finished | `10` |
-| `CHECK_ALLIES_EVERY` | Heal: read how many allies helped on the first round and then every N rounds | `10` |
-| `FAST_FINISH_SECONDS` | Heal: a heal only counts toward growing if it finished this fast after Help | `3` |
-| `MAX_ALLIES` | Heal: never size a batch for more allies than this | `20` |
-| `HOLD_AFTER_CANCEL_SECONDS` | Heal: after a cancel, do not grow the batch again for this long | `300` |
-| `INTEL_STAMINA` | Intel: how much stamina it may gain from meat (same as `--stamina`) | `0` |
-| `INTEL_STAMINA_NEEDED` | Intel: refill or stop when the stamina is below this | `12` |
-| `INTEL_MARCH_WAIT_SECONDS` | Intel: how long to wait for a free march before skipping an animal | `60` |
-| `INTEL_COLLECT_WAIT_SECONDS` | Intel: how long to wait for marches before collecting the rewards | `30` |
-| `HUNT_LEVEL` | Terror: which level to search for (same as `--level`) | `8` |
-| `HUNT_RETURN_MINUTES` | Terror: how long to wait at most for a rally to come back | `20` |
-| `SHOP_MAX_BUYS` | Shop: stop after this many purchases in one run | `200` |
-| `BACKPACK_RSS` | Backpack: which resource colours to use (same as `--rss`) | `grey,green` |
-| `BACKPACK_MAX_USES` | Backpack: stop after using this many stacks | `60` |
-| `DEVICE_UDID` | Pick a specific iPhone if several are connected | First connected iPhone |
+| Setting                      | What it does                                                                                                | Default                |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------- | ---------------------- |
+| `TEAM_ID`                    | Which Apple developer team signs the helper app                                                             | Found automatically    |
+| `BUNDLE_ID`                  | Name of the helper app on the phone                                                                         | Made from your team    |
+| `INTERVAL_MS`                | Pause after each tap, in milliseconds                                                                       | `0`                    |
+| `MAX_IDLE_SECONDS`           | Stop when there has been nothing to press this long                                                         | `600`                  |
+| `CLOCK`                      | Time format in the output: `24h` (14:52:08) or `12h` (2:52:08 PM)                                           | `24h`                  |
+| `TROOPS_PER_ALLY_XI`         | Heal: how many tier XI troops one helping ally heals                                                        | `60`                   |
+| `TROOPS_PER_ALLY_X`          | Heal: how many tier X troops one helping ally heals                                                         | `140`                  |
+| `TROOPS_PER_ALLY`            | Heal: troops per ally for any other tier                                                                    | `60`                   |
+| `CALIBRATE_START`            | Heal: how many troops the first measuring heal uses (same as `--start`)                                     | `10`                   |
+| `CALIBRATE_STEP`             | Heal: how many troops each measuring heal adds (same as `--increment`)                                      | `10`                   |
+| `CALIBRATE_TIER`             | Heal: which tier to measure, `XI` or `X` (same as `--tier`)                                                 | `XI`                   |
+| `CALIBRATE_MAX`              | Heal: stop measuring at this many troops                                                                    | `2000`                 |
+| `CALIBRATE_MAX_ROUNDS`       | Heal: give up measuring, and give up confirming, after this many heals                                      | `40`                   |
+| `CALIBRATE_SETTLE_SECONDS`   | Heal: keep reading the assist message this long after a heal finished                                       | `2`                    |
+| `CALIBRATE_LEFT_SECONDS`     | Heal: a heal with this many seconds or fewer left on its timer after the assists does not count as finished | `15`                   |
+| `CALIBRATE_CONFIRM`          | Heal: how many finished heals confirm the result                                                            | `5`                    |
+| `HELP_DELAY_MS`              | Heal: pause between pressing Heal and pressing Help, in milliseconds                                        | `100`                  |
+| `ALLY_TIMEOUT_SECONDS`       | Heal: at the smallest batch, stop when a heal has not finished this long after Help                         | `240`                  |
+| `CANCEL_AFTER_SECONDS`       | Heal: cancel a bigger heal that has not finished this long after Help                                       | `10`                   |
+| `START_ALLIES`               | Heal: how many allies to size the first batch for (same as `--allies`)                                      | `1`                    |
+| `GROW_AFTER_ROUNDS`          | Heal: try one ally more after this many heals in a row finished                                             | `10`                   |
+| `CHECK_ALLIES_EVERY`         | Heal: read how many allies helped on the first round and then every N rounds                                | `10`                   |
+| `FAST_FINISH_SECONDS`        | Heal: a heal only counts toward growing if it finished this fast after Help                                 | `3`                    |
+| `MAX_ALLIES`                 | Heal: never size a batch for more allies than this                                                          | `20`                   |
+| `HOLD_AFTER_CANCEL_SECONDS`  | Heal: after a cancel, do not grow the batch again for this long                                             | `300`                  |
+| `INTEL_STAMINA`              | Intel: how much stamina it may gain from meat (same as `--stamina`)                                         | `0`                    |
+| `INTEL_STAMINA_NEEDED`       | Intel: refill or stop when the stamina is below this                                                        | `12`                   |
+| `INTEL_MARCH_WAIT_SECONDS`   | Intel: how long to wait for a free march before skipping an animal                                          | `60`                   |
+| `INTEL_COLLECT_WAIT_SECONDS` | Intel: how long to wait for marches before collecting the rewards                                           | `30`                   |
+| `HUNT_LEVEL`                 | Terror: which level to search for (same as `--level`)                                                       | `8`                    |
+| `HUNT_RETURN_MINUTES`        | Terror: how long to wait at most for a rally to come back                                                   | `20`                   |
+| `SHOP_MAX_BUYS`              | Shop: stop after this many purchases in one run                                                             | `200`                  |
+| `BACKPACK_RSS`               | Backpack: which resource colours to use (same as `--rss`)                                                   | `grey,green`           |
+| `BACKPACK_MAX_USES`          | Backpack: stop after using this many stacks                                                                 | `60`                   |
+| `DEVICE_UDID`                | Pick a specific iPhone if several are connected                                                             | First connected iPhone |
 
 The recipes are made on an iPhone 17 Pro. On other models the buttons sit elsewhere and the recipe tells you it does not fit.
 
 ## When something goes wrong
 
-| What you see | What to do |
-| --- | --- |
-| `command not found: deno` | Run `nix develop` first. |
-| `no iphone found` | Plug in the cable, unlock the phone, try again. |
-| `is not reachable` | Unlock the phone and keep it unlocked while starting. |
-| `no apple development certificate found` | Do step 3 of the first time setup. |
-| `several developer teams found` | Create the settings file and copy one of the `TEAM_ID=` lines it shows into it. |
-| `the phone stopped accepting taps` | The phone locked. Unlock it, set Auto-Lock to Never and start again. |
-| `lost the connection to the phone` | The cable came loose or the phone locked. Plug it in, unlock it and start again. |
-| `xcodebuild failed, see build.log` | Check that you are signed in to Xcode and that the phone is unlocked. |
-| Starting takes minutes | The phone is connected over Wi-Fi. Plug in the cable. |
-| `webdriveragent did not start` | Unlock the phone, run `deno task rebuild`. |
+| What you see                                 | What to do                                                                                                                                                    |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `command not found: deno`                    | Run `nix develop` first.                                                                                                                                      |
+| `no iphone found`                            | Plug in the cable, unlock the phone, try again.                                                                                                               |
+| `is not reachable`                           | Unlock the phone and keep it unlocked while starting.                                                                                                         |
+| `no apple development certificate found`     | Do step 3 of the first time setup.                                                                                                                            |
+| `several developer teams found`              | Create the settings file and copy one of the `TEAM_ID=` lines it shows into it.                                                                               |
+| `the phone stopped accepting taps`           | The phone locked. Unlock it, set Auto-Lock to Never and start again.                                                                                          |
+| `lost the connection to the phone`           | The cable came loose or the phone locked. Plug it in, unlock it and start again.                                                                              |
+| `xcodebuild failed, see build.log`           | Check that you are signed in to Xcode and that the phone is unlocked.                                                                                         |
+| Starting takes minutes                       | The phone is connected over Wi-Fi. Plug in the cable.                                                                                                         |
+| `webdriveragent did not start`               | Unlock the phone, run `just rebuild`.                                                                                                                         |
 | `accurate text recognition is not answering` | The Mac cannot read small text right now. Healing still works, but it cannot check the amount box or count allies well. Restarting the Mac may bring it back. |
-| The phone says **Untrusted Developer** | Settings > General > VPN & Device Management, tap your Apple ID and **Trust**. |
-| It worked last week but not today | Run `deno task rebuild` to reinstall the helper app. |
+| The phone says **Untrusted Developer**       | Settings > General > VPN & Device Management, tap your Apple ID and **Trust**.                                                                                |
+| It worked last week but not today            | Run `just rebuild` to reinstall the helper app.                                                                                                               |
 
 **Tip for direnv users:** run `direnv allow` once and the tools load by themselves when you enter the folder, so you can skip `nix develop`.
 

@@ -111,7 +111,7 @@ export const heal: Recipe = {
     const startAllies = Number(settings.env.START_ALLIES || 1);
     const fastMs = Number(settings.env.FAST_FINISH_SECONDS || 3) * 1000;
     const maxAllies = Number(settings.env.MAX_ALLIES || 20);
-    const helpDelayMs = Number(settings.env.HELP_DELAY_MS ?? 400);
+    const helpDelayMs = Number(settings.env.HELP_DELAY_MS ?? 100);
     const holdMs = Number(settings.env.HOLD_AFTER_CANCEL_SECONDS || 300) * 1000;
 
     const first = await phone.screenshot();

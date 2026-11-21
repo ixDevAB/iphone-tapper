@@ -10,6 +10,8 @@
     "recruit": "deno run --allow-all src/start.ts recruit",
     "morning": "deno run --allow-all src/start.ts morning",
     "shop": "deno run --allow-all src/start.ts shop",
+    "claim-freebies": "deno run --allow-all src/start.ts claim-freebies",
+    "claim-vip": "deno run --allow-all src/start.ts claim-vip",
     "rebuild": "deno run --allow-all src/start.ts heal --rebuild"
   },
   "imports": {

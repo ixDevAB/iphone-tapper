@@ -196,7 +196,7 @@ Start it on the world map. It opens **Heroes** and **Recruit Heroes** and presse
 deno task morning --pan --gourmet --embrace
 ```
 
-Start it on the world map. It runs seven tasks one after the other and returns to the world map between them:
+Start it on the world map. It runs nine tasks one after the other and returns to the world map between them:
 
 1. the intel missions (`--pan`, `--gourmet`, `--embrace` and `--stamina 50` work as for the intel task; `--gourmet` is the same as `--storehouse`)
 2. two Terror rallies with Diana as archer and Fahd as cavalry (change with a number, `--arch`, `--cav`, `--inf` and `--level`)
@@ -205,6 +205,8 @@ Start it on the world map. It runs seven tasks one after the other and returns t
 5. the Nomadic Merchant, including the VIP XP item for gems
 6. the free hero recruits
 7. the pet skills, pet adventures and ally treasure
+8. the free items in the store
+9. the VIP claims
 
 If one task stops early, the round carries on with the next one.
 
@@ -218,6 +220,22 @@ deno task shop --buy-vip
 Start it on the world map. It opens **Shop** and buys every Nomadic Merchant item that costs resources (bread, wood, stone, iron). When only gem items are left it presses **Free Refresh** and starts over, until there is no free refresh left.
 
 It never buys with gems, with one exception: with `--buy-vip` it also buys the VIP XP item (the yellow V). A gem purchase opens a **Buy** window, and it only confirms when that window says VIP XP.
+
+### Free items in the store
+
+```sh
+deno task claim-freebies
+```
+
+Start it on the world map. It opens the store (the shopping cart), opens every tab that has a red dot, and scrolls down through it looking for things marked **Free**, **Claimable** or **Claim**. It claims those. It never presses a button with a price on it, and it skips a label that sits next to a price.
+
+### VIP claims
+
+```sh
+deno task claim-vip
+```
+
+Start it on the world map. It opens the VIP screen and claims the **daily free bundle** and the **daily sign-in chest**, then uses the VIP XP items you own. It never presses **Buy & Use**.
 
 ### Shortcuts with just
 
@@ -234,6 +252,8 @@ just claim-alliance
 just recruit
 just morning --pan --gourmet --embrace
 just shop --buy-vip
+just claim-freebies
+just claim-vip
 just rebuild
 ```
 
@@ -350,6 +370,7 @@ Change a value, save, and start again.
 | `CALIBRATE_SETTLE_SECONDS` | Heal: keep reading the assist message this long after a heal finished | `2` |
 | `CALIBRATE_LEFT_SECONDS` | Heal: a heal with this many seconds or fewer left on its timer after the assists does not count as finished | `15` |
 | `CALIBRATE_CONFIRM` | Heal: how many finished heals confirm the result | `5` |
+| `HELP_DELAY_MS` | Heal: pause between pressing Heal and pressing Help, in milliseconds | `100` |
 | `ALLY_TIMEOUT_SECONDS` | Heal: at the smallest batch, stop when a heal has not finished this long after Help | `240` |
 | `CANCEL_AFTER_SECONDS` | Heal: cancel a bigger heal that has not finished this long after Help | `10` |
 | `START_ALLIES` | Heal: how many allies to size the first batch for (same as `--allies`) | `1` |

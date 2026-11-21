@@ -31,5 +31,11 @@ morning *args:
 shop *args:
     deno task shop {{args}}
 
+claim-freebies *args:
+    deno task claim-freebies {{args}}
+
+claim-vip *args:
+    deno task claim-vip {{args}}
+
 rebuild:
     deno task rebuild

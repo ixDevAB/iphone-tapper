@@ -5,11 +5,13 @@ import { has } from "../../src/screen.ts";
 import { sleep } from "../../src/wda.ts";
 import { claimAlliance } from "../alliance/recipe.ts";
 import { intel } from "../intel/recipe.ts";
+import { claimFreebies } from "../freebies/recipe.ts";
 import { claimMail } from "../mail/recipe.ts";
 import { collectPet } from "../pets/recipe.ts";
 import { recruit } from "../recruit/recipe.ts";
 import { shop } from "../shop/recipe.ts";
 import { terrorHunt } from "../terror/recipe.ts";
+import { claimVip } from "../vip/recipe.ts";
 
 const backArrow = { x: 30, y: 77 };
 
@@ -23,7 +25,7 @@ const goHome = async (phone: Phone, tries: number): Promise<boolean> => {
 };
 
 export const morning: Recipe = {
-  description: "The morning round: intel, two Terror rallies with Diana and Fahd, all mail, the alliance chests and contributions, the Nomadic Merchant with VIP XP, the free hero recruits, then the pets.",
+  description: "The morning round: intel, two Terror rallies with Diana and Fahd, all mail, the alliance chests and contributions, the Nomadic Merchant with VIP XP, the free hero recruits, the pets, the store freebies, then the VIP claims.",
   run: async (phone, settings) => {
     const time = clock(settings.env.CLOCK);
     const hunt = {
@@ -40,6 +42,8 @@ export const morning: Recipe = {
       { name: "shop", recipe: shop, env: { ...settings.env, SHOP_BUY_VIP: "1" } },
       { name: "recruit", recipe: recruit, env: settings.env },
       { name: "collect-pet", recipe: collectPet, env: settings.env },
+      { name: "claim-freebies", recipe: claimFreebies, env: settings.env },
+      { name: "claim-vip", recipe: claimVip, env: settings.env },
     ];
     for (const step of steps) {
       console.log(`\n${time()} == ${step.name} ==`);

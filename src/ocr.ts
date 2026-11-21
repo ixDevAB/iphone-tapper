@@ -6,6 +6,28 @@ const bin = `${root}build/ocr`;
 
 export type TextLine = { text: string; x: number; y: number; width: number; height: number };
 
+const lookalikes: Record<string, string> = {
+  "А": "A",
+  "В": "B",
+  "Е": "E",
+  "К": "K",
+  "М": "M",
+  "Н": "H",
+  "О": "O",
+  "Р": "P",
+  "С": "C",
+  "Т": "T",
+  "Х": "X",
+  "а": "a",
+  "е": "e",
+  "о": "o",
+  "р": "p",
+  "с": "c",
+  "х": "x",
+};
+
+export const latin = (text: string) => [...text].map((c) => lookalikes[c] ?? c).join("");
+
 const mode = { accurate: true };
 const probeImage = `${root}docs/images/heal.png`;
 
@@ -58,7 +80,7 @@ export const startOcr = () => {
     await writer.write(new TextEncoder().encode(`${path}\n`));
     const { value } = await reader.read();
     await Deno.remove(path);
-    return JSON.parse(value ?? "[]") as TextLine[];
+    return (JSON.parse(value ?? "[]") as TextLine[]).map((l) => ({ ...l, text: latin(l.text) }));
   };
 
   const read = (img: Image) => readPng(toPng(img));

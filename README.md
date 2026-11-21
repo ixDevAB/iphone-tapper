@@ -274,6 +274,15 @@ Start it on the world map. It opens the **Backpack** and uses, a whole stack at 
 
 `--rss` picks which resource colours to use: `grey`, `green`, `blue`, `purple`. It confirms the alert about the city protection limit. It never uses chests or anything else. At the end it opens every tab once to clear the red dots.
 
+### Name everything in the backpack
+
+```sh
+just backpack-names
+just backpack-names --tabs resources,speedups
+```
+
+Start it on the world map. It goes through the Backpack tabs, taps every item to read its name and saves its picture as `assets/backpack/<name>.png`. It only taps the item tiles and never **Use**. Run it again when you get new items; pictures that are already there are kept.
+
 ### Collect all and claim all
 
 ```sh

@@ -48,6 +48,9 @@ collect-conquest *args:
 collect-backpack *args:
     deno task start collect-backpack {{args}}
 
+backpack-names *args:
+    deno task start backpack-names {{args}}
+
 run *args:
     deno task start run {{args}}
 

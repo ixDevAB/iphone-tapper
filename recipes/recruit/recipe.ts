@@ -1,13 +1,16 @@
 import { greenButtons } from "../../src/buttons.ts";
 import { exitLine, type Next, openFromWorld, runFlow, type Seen } from "../../src/flow.ts";
+import { crop } from "../../src/image.ts";
 import type { Recipe } from "../../src/recipe.ts";
-import { backArrow, center, exact, has } from "../../src/screen.ts";
+import { backArrow, center, exact, has, screenWidth } from "../../src/screen.ts";
 import { clock, secondsIn, sleep } from "../../src/time.ts";
 import { onWorld } from "../../src/world.ts";
 
 const heroesButton = { x: 106, y: 825 };
 const exitSpot = { x: 200, y: 810 };
 const buttonsTop = 1500;
+const recruitButton = { x: 298, y: 812 };
+const buttonBand = { x: 0, y: 2300, width: screenWidth, height: 322 };
 
 type State = { recruited: number; opens: number; leaving: boolean };
 
@@ -54,6 +57,13 @@ export const recruit: Recipe = {
       if (onWorld(lines)) {
         const done = `${s.recruited} free ${s.recruited === 1 ? "recruit" : "recruits"} done`;
         return openFromWorld(phone, s, heroesButton, 1500, done, "the heroes screen did not open");
+      }
+
+      const band = await phone.ocr(crop(img(), buttonBand));
+      if (exact(band, "Recruit Heroes").length) {
+        await phone.tap(s.leaving ? backArrow : recruitButton);
+        await sleep(2000);
+        return s;
       }
     };
 

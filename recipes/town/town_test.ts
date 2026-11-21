@@ -2,6 +2,7 @@ import { assertEquals, assertThrows } from "@std/assert";
 import { line } from "../../src/testing.ts";
 import { onTownMap, onWorldMap, row, secondsLeft } from "../../src/town.ts";
 import { order, percentsIn, ratioFrom, ratiosFrom } from "./trials.ts";
+import { placeFrom, placeText, views } from "./water.ts";
 
 Deno.test("a troop ratio is three whole numbers adding up to 100", () => {
   assertEquals(ratioFrom("50/10/40"), [50, 10, 40]);
@@ -54,4 +55,15 @@ Deno.test("the town map and the world map are told apart by the last button", ()
   assertEquals(onWorldMap([line("Town", 361, 838)]), true);
   assertEquals(onWorldMap([line("Town", 361, 838), line("My Island", 86, 73)]), false);
   assertEquals(onTownMap([line("Town", 44, 245)]), false);
+});
+
+Deno.test("the place of the purifier is read back as it was written", () => {
+  const place = { drag: { x: -150, y: 0 }, label: { x: 248, y: 96 } };
+  assertEquals(placeText(place), "-150,0,248,96");
+  assertEquals(placeFrom("-150,0,248,96"), place);
+  assertEquals(placeFrom(" 0, 0, 120, 300 "), { drag: { x: 0, y: 0 }, label: { x: 120, y: 300 } });
+  assertEquals(placeFrom("248,96"), undefined);
+  assertEquals(placeFrom("a,b,c,d"), undefined);
+  assertEquals(placeFrom(undefined), undefined);
+  assertEquals(views[0].drag, { x: 0, y: 0 });
 });

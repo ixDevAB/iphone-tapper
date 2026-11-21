@@ -92,3 +92,6 @@ collect-online *args:
 
 mystic-trial *args:
     deno task start mystic-trial {{args}}
+
+island-locate-water *args:
+    deno task start island-locate-water {{args}}

@@ -18,7 +18,7 @@ import { terrorHunt } from "../recipes/terror/recipe.ts";
 import { collectOnline } from "../recipes/town/online.ts";
 import { mysticTrial } from "../recipes/town/trials.ts";
 import { trainTroops } from "../recipes/town/troops.ts";
-import { collectWater } from "../recipes/town/water.ts";
+import { collectWater, locateWater } from "../recipes/town/water.ts";
 import { claimVip } from "../recipes/vip/recipe.ts";
 import type { Recipe } from "./recipe.ts";
 
@@ -45,6 +45,7 @@ export const recipes: Record<string, Recipe> = {
   "backpack-names": backpackNames,
   "train-troops": trainTroops,
   "collect-water": collectWater,
+  "island-locate-water": locateWater,
   "collect-online": collectOnline,
   "mystic-trial": mysticTrial,
 };

@@ -20,7 +20,7 @@ import {
 
 const envFile = new URL("../../.env", import.meta.url);
 
-export const withSetting = (file: string, name: string, value: number) => {
+export const withSetting = (file: string, name: string, value: number | string) => {
   const line = `${name}=${value}`;
   const pattern = new RegExp(`^${name}=.*$`, "m");
   const body = pattern.test(file)

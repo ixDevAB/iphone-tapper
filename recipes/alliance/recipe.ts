@@ -1,4 +1,5 @@
 import { clock } from "../../src/clock.ts";
+import { hasRedDot } from "../../src/dots.ts";
 import { fromPng, toPng } from "../../src/image.ts";
 import type { TextLine } from "../../src/ocr.ts";
 import type { Recipe } from "../../src/recipes.ts";
@@ -10,6 +11,8 @@ const allianceButton = { x: 299, y: 825 };
 const backArrow = { x: 30, y: 77 };
 const battleTab = { x: 327, y: 208 };
 const closeCovenant = { x: 357, y: 205 };
+const bigChest = { x: 200, y: 165 };
+const bigChestDot = { x: 700, y: 370, width: 110, height: 100 };
 const buildDir = new URL("../../build/", import.meta.url);
 
 const chestSteps = [
@@ -32,6 +35,7 @@ export const claimAlliance: Recipe = {
 
     type State = {
       chest: number;
+      bigChest: number;
       techDone: boolean;
       battleTried: boolean;
       contributed: number;
@@ -91,6 +95,12 @@ export const claimAlliance: Recipe = {
       }
 
       if (titled(lines, "Chests")) {
+        if (s.bigChest < 2 && hasRedDot(fromPng(png), bigChestDot)) {
+          log("opening the alliance chest");
+          await phone.tap(bigChest);
+          await sleep(2000);
+          return step({ ...fresh, bigChest: s.bigChest + 1 });
+        }
         const current = chestSteps[s.chest];
         if (!current) {
           await phone.tap(backArrow);
@@ -139,7 +149,7 @@ export const claimAlliance: Recipe = {
 
     const first = await phone.screenshot();
     if (first.width !== screenWidth) throw new Error(`this recipe only works on an iPhone 17 Pro`);
-    const reason = await step({ chest: 0, techDone: false, battleTried: false, contributed: 0, opens: 0, leaving: false, knownAt: Date.now() });
+    const reason = await step({ chest: 0, bigChest: 0, techDone: false, battleTried: false, contributed: 0, opens: 0, leaving: false, knownAt: Date.now() });
     console.log(`stopped: ${reason}`);
     rewards.print();
   },

@@ -204,8 +204,11 @@ export const heal: Recipe = {
         if (seen) console.log(`${time()} ${seen} ${seen === 1 ? "ally" : "allies"} helped${allies === seen ? "" : ", holding after a cancel"}`);
         if (s.heals === 0 || (s.heals + 1) % checkEvery === 0) {
           const text = (await phone.ocr(await phone.screenshot())).map((l) => l.text).join(" ");
-          const injured = text.match(/([\d,]{3,})\s*\/\s*[\d,]{3,}/)?.[1];
-          const now = injured ? Number(injured.replaceAll(",", "")) : undefined;
+          const injured = text.match(/(\d{1,3}(?:[,. ]\d{3})*)\s*\/\s*(\d{1,3}(?:[,. ]\d{3})+)/);
+          const count = injured ? Number(injured[1].replace(/\D/g, "")) : undefined;
+          const capacity = injured ? Number(injured[2].replace(/\D/g, "")) : 0;
+          const jumped = count !== undefined && progress.left !== undefined && progress.left - count > progress.left * 0.5 && progress.left > 5000;
+          const now = count !== undefined && count <= capacity && !jumped ? count : undefined;
           if (now !== undefined) {
             const healed = progress.left !== undefined ? progress.left - now : 0;
             const minutes = healed > 0 ? Math.round(now / (healed / ((Date.now() - progress.at) / 60000))) : undefined;

@@ -179,7 +179,7 @@ deno task claim-alliance
 
 Start it on the world map. It opens **Alliance**, then:
 
-- **Chests**: presses **Claim All** on the Alliance Gift tab and on the Loot Chest tab
+- **Chests**: opens the big chest at the top when it has a red dot, then presses **Claim All** on the Alliance Gift tab and on the Loot Chest tab
 - **Tech**: opens **Covenant-Making** and presses the bread **Contribute** button until the attempts are down to 0
 
 It never presses the gem Contribute button or **Go**. At the end it prints what it claimed.

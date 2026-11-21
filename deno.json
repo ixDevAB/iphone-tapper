@@ -4,6 +4,7 @@
     "test": "deno test --allow-read",
     "check": "deno check src/start.ts && deno lint",
     "runs": "deno run --allow-read --allow-write src/history.ts",
+    "decisions": "deno run --allow-read src/why.ts",
     "fmt": "deno fmt"
   },
   "exclude": ["vendor/", "build/", ".direnv/"],

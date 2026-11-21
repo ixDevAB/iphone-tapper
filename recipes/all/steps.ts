@@ -1,3 +1,4 @@
+import { decide, during } from "../../src/decisions.ts";
 import type { Phone } from "../../src/phone.ts";
 import { type Env, on, optionsOf, type Recipe, type Settings } from "../../src/recipe.ts";
 import { clock } from "../../src/time.ts";
@@ -67,6 +68,8 @@ export const logged = async (
   run: () => Promise<void | number>,
 ) => {
   const startedAt = Date.now();
+  const outer = during(name);
+  await decide("started");
   const result = await run().then(
     (wants) => ({ ok: true, wants, error: undefined }),
     (e) => ({ ok: false, wants: undefined, error: String(e?.message ?? e) }),
@@ -77,6 +80,8 @@ export const logged = async (
     ? nextAt(step, result.ok, result.wants, finishedAt, Number(settings.env.DAY_RESET_UTC_HOUR || 0))
     : undefined;
   settings.runs.record({ task: name, startedAt, finishedAt, ok: result.ok, error: result.error, nextAt: next });
+  await decide(result.ok ? "ended" : "ended early", result.error ? { why: result.error } : {});
+  during(outer);
   return next;
 };
 

@@ -1,3 +1,4 @@
+import { decide } from "../../src/decisions.ts";
 import { exitLine, type Next, openFromWorld, runFlow, type Seen } from "../../src/flow.ts";
 import { on, type Recipe } from "../../src/recipe.ts";
 import { backArrow, center, exact, has, matching, scale } from "../../src/screen.ts";
@@ -50,6 +51,11 @@ export const shop: Recipe = {
       if (exact(lines, "Buy").some((l) => center(l).y < 360) && !has(lines, /^Free Refresh$/i)) {
         const gems = blueShare(img(), buyPill) > 0.01;
         const allowed = s.expect === "vip" ? buyVip && has(lines, /VIP XP/i) : s.expect === "rss" ? !gems : false;
+        await decide(allowed ? "confirmed a purchase" : "refused a purchase", {
+          expected: s.expect,
+          gems,
+          buyVip,
+        });
         await phone.tap(allowed ? buyButton : closeBuy);
         await sleep(1500);
         if (!allowed) return `stopped at a purchase it is not allowed to make, ${summary(s)}`;
@@ -70,6 +76,7 @@ export const shop: Recipe = {
             .find((l) => Math.abs(center(l).y - wanted.y) < 12 && Math.abs(center(l).x - wanted.x) < 55)
             ?.text.replace(/^[^\d]+/, "") ?? "?";
           log(wanted.diamonds ? `buying VIP XP for ${price} gems` : `buying an item for ${price} resources`);
+          await decide(wanted.diamonds ? "picked VIP XP for gems" : "picked an item for resources", { price });
           await phone.tap({ x: wanted.x, y: wanted.y });
           await sleep(1500);
           return {

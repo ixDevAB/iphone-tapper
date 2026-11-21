@@ -1,5 +1,6 @@
 import { readArgs } from "./args.ts";
 import { config } from "./config.ts";
+import { decide, rotate, traced } from "./decisions.ts";
 import { findPhone } from "./device.ts";
 import { ensureOcr } from "./ocr.ts";
 import { connectPhone } from "./phone.ts";
@@ -35,7 +36,13 @@ await ensureOcr(settings.env);
 await ensureWda(phone.udid, config.teamId, config.bundleId, on(settings.env, "WDA_REBUILD"));
 const wda = await startWda(phone.udid, config.teamId, config.bundleId, base);
 console.log(`the helper on the phone is ready (${took()})`);
-const connected = await connectPhone(base);
+const connected = traced(await connectPhone(base));
+await rotate();
+const say = console.log;
+console.log = (...args: unknown[]) => {
+  say(...args);
+  decide("said", { text: args.join(" ") });
+};
 
 const stop = () => {
   connected.close();

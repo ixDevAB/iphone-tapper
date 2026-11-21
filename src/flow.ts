@@ -1,3 +1,4 @@
+import { changes, decide } from "./decisions.ts";
 import { fromPng, type Image, type Point } from "./image.ts";
 import type { TextLine } from "./ocr.ts";
 import type { Phone } from "./phone.ts";
@@ -67,11 +68,23 @@ export const runFlow = async <S extends object>(phone: Phone, flow: Flow<S>) => 
   const step = async (s: S, knownAt: number): Promise<string> => {
     const seen = await look(phone);
     const next = await flow.screen(s, seen);
-    if (typeof next === "string") return next;
-    if (next !== undefined) return step(next, Date.now());
+    if (typeof next === "string") {
+      await decide("finished", { reason: next });
+      return next;
+    }
+    if (next !== undefined) {
+      await decide("knew the screen", { changed: changes(s, next) });
+      return step(next, Date.now());
+    }
+    await decide("did not know the screen, waiting");
     if (Date.now() - knownAt > flow.lostMs) {
       await saveShot(`${flow.name}-lost.png`, seen.png);
       const rest = flow.lost ? `, ${flow.lost(s)}` : "";
+      await decide("gave up", {
+        why: "no screen it knows",
+        picture: `build/${flow.name}-lost.png`,
+        read: seen.lines.map((l) => l.text).slice(0, 30),
+      });
       throw new Error(`did not recognise the screen, see build/${flow.name}-lost.png${rest}`);
     }
     await sleep(1000);

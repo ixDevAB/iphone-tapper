@@ -172,8 +172,10 @@ export const intel: Recipe = {
         const finished = s.kind ? { ...fresh, done: s.done + 1, kind: undefined, current: undefined, deploys: 0, sent: marching } : fresh;
         const screen = fromPng(png);
         if (usePan && !s.panTried) {
-          const there = difference(screen, pan.img, pan.x, pan.y) < 12;
-          console.log(`${time()} ${there ? "pressing the pan skill" : "the pan skill is not available"}`);
+          const panDifference = difference(screen, pan.img, pan.x, pan.y);
+          const there = panDifference < 12;
+          console.log(`${time()} ${there ? "pressing the pan skill" : `the pan skill is not available (picture difference ${panDifference.toFixed(0)}, see build/intel-pan.png)`}`);
+          if (!there) await Deno.writeFile(new URL("intel-pan.png", buildDir), png).catch(() => undefined);
           if (there) await phone.tap(panButton);
           await sleep(1500);
           return step({ ...finished, panTried: true });
@@ -208,6 +210,9 @@ export const intel: Recipe = {
           await sleep(3000);
           return step({ ...finished, stamina, duds, tapped: undefined, collectSince: since });
         }
+        await Deno.writeFile(new URL("intel-end.png", buildDir), png).catch(() => undefined);
+        const pins = found.filter((m) => m.kind !== "check");
+        console.log(`${time()} markers on the last screen: ${pins.length} seen, ${pins.filter((m) => duds.some((d) => near(d, m))).length} skipped because a tap on them opened nothing, ${pins.filter((m) => finished.sent.some((d) => near(d, m))).length} skipped as already sent (screenshot in build/intel-end.png)`);
         return s.empty ? `${s.empty}, ${finished.done} done` : `no intel left to do, ${finished.done} done`;
       }
 

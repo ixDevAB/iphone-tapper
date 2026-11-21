@@ -12,6 +12,9 @@
     "shop": "deno run --allow-all src/start.ts shop",
     "claim-freebies": "deno run --allow-all src/start.ts claim-freebies",
     "claim-vip": "deno run --allow-all src/start.ts claim-vip",
+    "collect-daily": "deno run --allow-all src/start.ts collect-daily",
+    "collect-conquest": "deno run --allow-all src/start.ts collect-conquest",
+    "collect-backpack": "deno run --allow-all src/start.ts collect-backpack",
     "rebuild": "deno run --allow-all src/start.ts heal --rebuild"
   },
   "imports": {

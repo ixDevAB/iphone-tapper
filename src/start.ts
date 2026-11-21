@@ -23,11 +23,12 @@ const valueFlags: Record<string, string> = {
   "-i": "CALIBRATE_STEP",
   "--stamina": "INTEL_STAMINA",
   "--level": "HUNT_LEVEL",
+  "--rss": "BACKPACK_RSS",
   "--arch": "HUNT_ARCH",
   "--inf": "HUNT_INF",
   "--cav": "HUNT_CAV",
 };
-const switches = ["--save", "--fresh", "--rebuild", "--pan", "--storehouse", "--gourmet", "--embrace", "--buy-vip"];
+const switches = ["--save", "--fresh", "--rebuild", "--pan", "--storehouse", "--gourmet", "--embrace", "--buy-vip", "--force"];
 
 const unknown = Deno.args.filter((arg) => arg.startsWith("-") && !(arg in valueFlags) && !switches.includes(arg));
 if (unknown.length) {
@@ -49,14 +50,17 @@ Deno.args.forEach((arg, i) => {
 const amount = Deno.args.slice(1).find((arg, i, all) => /^\d+$/.test(arg) && !(all[i - 1] in valueFlags));
 if (amount) config.env.AMOUNT = amount;
 
+const startedAt = Date.now();
+const took = () => `${((Date.now() - startedAt) / 1000).toFixed(0)}s`;
 const phone = await findPhone(config.udid);
-console.log(`found ${phone.name}`);
+console.log(`found ${phone.name} (${took()})`);
 
 const base = `http://[${phone.tunnelIp}]:8100`;
 
 await ensureOcr();
 await ensureWda(phone.udid, config.teamId, config.bundleId, Deno.args.includes("--rebuild"));
 const wda = await startWda(phone.udid, config.teamId, config.bundleId, base);
+console.log(`the helper on the phone is ready (${took()})`);
 const connected = await connectPhone(base);
 
 const stop = () => {

@@ -196,7 +196,7 @@ Start it on the world map. It opens **Heroes** and **Recruit Heroes** and presse
 deno task morning --pan --gourmet --embrace
 ```
 
-Start it on the world map. It runs nine tasks one after the other and returns to the world map between them:
+Start it on the world map. It runs twelve tasks one after the other and returns to the world map between them:
 
 1. the intel missions (`--pan`, `--gourmet`, `--embrace` and `--stamina 50` work as for the intel task; `--gourmet` is the same as `--storehouse`)
 2. two Terror rallies with Diana as archer and Fahd as cavalry (change with a number, `--arch`, `--cav`, `--inf` and `--level`)
@@ -207,6 +207,9 @@ Start it on the world map. It runs nine tasks one after the other and returns to
 7. the pet skills, pet adventures and ally treasure
 8. the free items in the store
 9. the VIP claims
+10. the Conquest idle income (only with a red dot, or with `--force`)
+11. the Backpack (gems, hero XP, grey and green resources, or the colours from `--rss`)
+12. the daily missions, last so it also claims what the other steps completed
 
 If one task stops early, the round carries on with the next one.
 
@@ -237,6 +240,38 @@ deno task claim-vip
 
 Start it on the world map. It opens the VIP screen and claims the **daily free bundle** and the **daily sign-in chest**, then uses the VIP XP items you own. It never presses **Buy & Use**.
 
+### Daily missions
+
+```sh
+deno task collect-daily
+```
+
+Start it on the world map. It opens the daily missions (the scroll icon), goes to the **Daily** tab and presses **Claim All** until nothing is left.
+
+### Conquest idle income
+
+```sh
+deno task collect-conquest
+deno task collect-conquest --force
+```
+
+Start it on the world map. When the **Conquest** button has a red dot, it opens Conquest and claims the idle income. Without the dot it does nothing, unless you add `--force`.
+
+### Backpack
+
+```sh
+deno task collect-backpack
+deno task collect-backpack --rss grey,green,blue
+```
+
+Start it on the world map. It opens the **Backpack** and uses, a whole stack at a time:
+
+- all gems
+- all hero XP
+- the grey and green resource items (bread, wood, stone, iron, also the secured ones)
+
+`--rss` picks which resource colours to use: `grey`, `green`, `blue`, `purple`. It confirms the alert about the city protection limit. It never uses chests or anything else. At the end it opens every tab once to clear the red dots.
+
 ### Shortcuts with just
 
 If you have [just](https://just.systems) (it comes with `nix develop`), these do the same:
@@ -254,6 +289,9 @@ just morning --pan --gourmet --embrace
 just shop --buy-vip
 just claim-freebies
 just claim-vip
+just collect-daily
+just collect-conquest --force
+just collect-backpack --rss grey,green
 just rebuild
 ```
 
@@ -386,6 +424,8 @@ Change a value, save, and start again.
 | `HUNT_LEVEL` | Terror: which level to search for (same as `--level`) | `8` |
 | `HUNT_RETURN_MINUTES` | Terror: how long to wait at most for a rally to come back | `20` |
 | `SHOP_MAX_BUYS` | Shop: stop after this many purchases in one run | `200` |
+| `BACKPACK_RSS` | Backpack: which resource colours to use (same as `--rss`) | `grey,green` |
+| `BACKPACK_MAX_USES` | Backpack: stop after using this many stacks | `60` |
 | `DEVICE_UDID` | Pick a specific iPhone if several are connected | First connected iPhone |
 
 The recipes are made on an iPhone 17 Pro. On other models the buttons sit elsewhere and the recipe tells you it does not fit.
@@ -402,6 +442,7 @@ The recipes are made on an iPhone 17 Pro. On other models the buttons sit elsewh
 | `the phone stopped accepting taps` | The phone locked. Unlock it, set Auto-Lock to Never and start again. |
 | `lost the connection to the phone` | The cable came loose or the phone locked. Plug it in, unlock it and start again. |
 | `xcodebuild failed, see build.log` | Check that you are signed in to Xcode and that the phone is unlocked. |
+| Starting takes minutes | The phone is connected over Wi-Fi. Plug in the cable. |
 | `webdriveragent did not start` | Unlock the phone, run `deno task rebuild`. |
 | `accurate text recognition is not answering` | The Mac cannot read small text right now. Healing still works, but it cannot check the amount box or count allies well. Restarting the Mac may bring it back. |
 | The phone says **Untrusted Developer** | Settings > General > VPN & Device Management, tap your Apple ID and **Trust**. |

@@ -89,9 +89,10 @@ export const collectPet: Recipe = {
           return step(fresh);
         }
         const left = Number(remaining.text.replace(/O$/i, "0").match(/(\d+)\s*$/)?.[1] ?? 0);
-        const claim = exact(lines, "Claim")[0];
+        const claimAll = matching(lines, /^claim all$/i);
+        const claim = claimAll ?? exact(lines, "Claim")[0];
         if (left > 0 && claim && s.claims < 20) {
-          console.log(`${time()} claiming an ally treasure (${left} left today)`);
+          console.log(`${time()} ${claimAll ? "claiming all ally treasures" : "claiming an ally treasure"} (${left} left today)`);
           await press(claim);
           return step({ ...fresh, claims: s.claims + 1 });
         }

@@ -157,6 +157,8 @@ export const terrorHunt: Recipe = {
         const seen = faces.findIndex((name) => name !== undefined && (name.startsWith(slot.name) || slot.name.startsWith(name)));
         if (seen >= 0) return step({ ...fresh, chosen: true, tile: seen, spot: spots[seen] });
         const unknown = faces.findIndex((name, i) => i >= s.tile && name === undefined);
+        const pictured = heroes.some((h) => h.name === slot.name);
+        if (pictured && s.tile < spots.length) return step({ ...fresh, tile: spots.length });
         if (unknown >= 0 && unknown !== s.tile) return step({ ...fresh, tile: unknown });
         if (unknown < 0 && s.tile < spots.length) return step({ ...fresh, tile: spots.length });
         if (s.tile >= spots.length) {

@@ -3,6 +3,9 @@ import { intel } from "../recipes/intel/recipe.ts";
 import { claimAlliance } from "../recipes/alliance/recipe.ts";
 import { claimMail } from "../recipes/mail/recipe.ts";
 import { collectPet } from "../recipes/pets/recipe.ts";
+import { collectBackpack } from "../recipes/backpack/recipe.ts";
+import { collectConquest } from "../recipes/conquest/recipe.ts";
+import { collectDaily } from "../recipes/daily/recipe.ts";
 import { claimFreebies } from "../recipes/freebies/recipe.ts";
 import { heal } from "../recipes/heal/recipe.ts";
 import { morning } from "../recipes/morning/recipe.ts";
@@ -36,4 +39,7 @@ export const recipes: Record<string, Recipe> = {
   shop,
   "claim-freebies": claimFreebies,
   "claim-vip": claimVip,
+  "collect-daily": collectDaily,
+  "collect-conquest": collectConquest,
+  "collect-backpack": collectBackpack,
 };

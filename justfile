@@ -37,5 +37,14 @@ claim-freebies *args:
 claim-vip *args:
     deno task claim-vip {{args}}
 
+collect-daily *args:
+    deno task collect-daily {{args}}
+
+collect-conquest *args:
+    deno task collect-conquest {{args}}
+
+collect-backpack *args:
+    deno task collect-backpack {{args}}
+
 rebuild:
     deno task rebuild

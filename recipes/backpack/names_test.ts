@@ -1,11 +1,41 @@
 import { assertEquals } from "@std/assert";
 import { line, picture } from "../../src/testing.ts";
-import { alike, blank, countAt, fileName, gearTitle, latin, panelIn, signatureOf, titleIn, withGaps } from "./names.ts";
+import {
+  alike,
+  blank,
+  countAt,
+  fileName,
+  gearTitle,
+  latin,
+  listSample,
+  panelIn,
+  sameList,
+  signatureOf,
+  tileRows,
+  titleIn,
+} from "./names.ts";
 
-Deno.test("rows the reader missed are filled in from the row spacing", () => {
-  assertEquals(withGaps([197, 290, 476, 569]), [197, 290, 383, 476, 569]);
-  assertEquals(withGaps([200, 293]), [200, 293]);
-  assertEquals(withGaps([]), []);
+Deno.test("tile rows are found from the pictures, not from their labels", () => {
+  const tile = (y: number) => ({ at: { x: 68, y, width: 223, height: 223 }, rgb: [120, 110, 230] });
+  const img = picture(1206, 2622, [
+    { at: { x: 0, y: 0, width: 1206, height: 2622 }, rgb: [215, 190, 165] },
+    tile(478),
+    tile(757),
+    { at: { x: 68, y: 2500, width: 223, height: 60 }, rgb: [120, 110, 230] },
+  ]);
+  assertEquals(tileRows(img).map(Math.round), [197, 290]);
+});
+
+Deno.test("a row hidden behind a banner is filled in from the row spacing", () => {
+  const tile = (y: number) => ({ at: { x: 68, y, width: 223, height: 223 }, rgb: [120, 110, 230] });
+  const img = picture(1206, 2622, [
+    { at: { x: 0, y: 0, width: 1206, height: 2622 }, rgb: [215, 190, 165] },
+    tile(478),
+    tile(757),
+    { at: { x: 0, y: 860, width: 1206, height: 60 }, rgb: [215, 190, 165] },
+    tile(1036),
+  ]);
+  assertEquals(tileRows(img).map(Math.round), [197, 290, 383]);
 });
 
 Deno.test("look-alike cyrillic letters become latin", () => {
@@ -79,4 +109,15 @@ Deno.test("a gear name is the line under the gear details title", () => {
     line("Unequip", 320, 309),
   ];
   assertEquals(gearTitle(lines, 267), "Champion's Gloves");
+});
+
+Deno.test("a list that did not move after a scroll is the end of the list", () => {
+  const list = (y: number) =>
+    listSample(picture(1206, 2622, [
+      { at: { x: 0, y: 0, width: 1206, height: 2622 }, rgb: [215, 190, 165] },
+      { at: { x: 68, y, width: 1070, height: 223 }, rgb: [120, 110, 230] },
+    ]));
+  assertEquals(sameList(list(600), list(600)), true);
+  assertEquals(sameList(list(600), list(900)), false);
+  assertEquals(sameList(list(600), []), false);
 });

@@ -23,16 +23,17 @@ export const colourAt = (img: Image, x: number, y: number) => {
   return colours.toSorted((a, b) => count(b) - count(a))[0];
 };
 
-export const rowsIn = (lines: TextLine[], label = /^[\d,.]+$/) =>
+export const rowsIn = (lines: TextLine[]) =>
   lines
-    .filter((l) => label.test(l.text.trim()) && columns.some((c) => center(l).x - c >= 5 && center(l).x - c <= 34))
+    .filter((l) =>
+      /^[\d,.]+$/.test(l.text.trim()) && columns.some((c) => center(l).x - c >= 5 && center(l).x - c <= 34)
+    )
     .map((l) => center(l).y - 26)
     .toSorted((a, b) => a - b)
     .reduce<number[][]>(
-      (rows, y) =>
-        rows.length && y - rows[rows.length - 1][0] < 40
-          ? [...rows.slice(0, -1), [...rows[rows.length - 1], y]]
-          : [...rows, [y]],
+      (rows, y) => rows.length && y - rows[rows.length - 1][0] < 40
+        ? [...rows.slice(0, -1), [...rows[rows.length - 1], y]]
+        : [...rows, [y]],
       [],
     )
     .filter((row, i, all) => row.length >= 2 || i === all.length - 1)

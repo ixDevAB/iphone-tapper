@@ -6,7 +6,7 @@ import type { Recipe } from "../../src/recipe.ts";
 import { backArrow, center, exact, has, saveShot, scale } from "../../src/screen.ts";
 import { clock, sleep } from "../../src/time.ts";
 import { atTown } from "../../src/world.ts";
-import { columns, rowsIn } from "./tiles.ts";
+import { columns } from "./tiles.ts";
 
 const backpackButton = { x: 170, y: 825 };
 const tabY = 121;
@@ -19,9 +19,13 @@ const tabs = [
 ];
 const dir = new URL("../../assets/backpack/", import.meta.url);
 const cells = { columns: 6, rows: 5, step: 5 };
+const tileHeight = 76;
 const pitch = 93;
 const label = /^([\d,.]+|\W*lv\S*\s*\d+)$/i;
-const misread: Record<string, string> = { "hunting arrowa": "hunting arrow" };
+const misread: Record<string, string> = {
+  "hunting arrowa": "hunting arrow",
+  "crusader battle boots": "crusader's battle boots",
+};
 const tileAbovePanel = 61;
 const margins = [75, 1100];
 const scan = { top: 150, bottom: 840, step: 2, run: 10 };
@@ -92,12 +96,36 @@ export const countAt = (lines: TextLine[], spot: Point) =>
     Math.abs(center(l).y - spot.y - 26) < 12
   )?.text.trim() ?? "";
 
-export const withGaps = (rows: number[]) =>
-  rows.flatMap((y, i) => {
+export const listSample = (img: Image) =>
+  Array.from(
+    { length: 16 * 28 },
+    (_, i) => rgbAt(img, 60 + (i % 16) * 72, (scan.top + 40 + Math.floor(i / 16) * 23) * scale),
+  ).flat();
+
+export const sameList = (a: number[], b: number[]) =>
+  a.length === b.length && a.filter((n, i) => Math.abs(n - b[i]) > 24).length < a.length * 0.03;
+
+export const tileRows = (img: Image) => {
+  const ys = Array.from({ length: scan.bottom - scan.top }, (_, i) => scan.top + i);
+  const differs = ys.map((y) => {
+    const tile = rgbAt(img, columns[0] * scale, y * scale);
+    const beside = rgbAt(img, (columns[0] - 46) * scale, y * scale);
+    return tile.reduce((sum, n, c) => sum + Math.abs(n - beside[c]), 0) > 45;
+  });
+  const inside = differs.map((on, i) =>
+    on || (differs.slice(Math.max(0, i - 5), i).some((d) => d) && differs.slice(i + 1, i + 6).some((d) => d))
+  );
+  const starts = ys.filter((_, i) => inside[i] && !inside[i - 1]);
+  const rows = starts.flatMap((start) => {
+    const length = inside.slice(start - scan.top).findIndex((on) => !on);
+    return length >= tileHeight - 14 && length <= tileHeight + 14 ? [start + tileHeight / 2 - 1] : [];
+  });
+  return rows.flatMap((y, i) => {
     const next = rows[i + 1];
     const missing = next === undefined ? 0 : Math.max(0, Math.round((next - y) / pitch) - 1);
     return [y, ...Array.from({ length: missing }, (_, k) => y + (k + 1) * (next - y) / (missing + 1))];
   });
+};
 
 const lookalikes: Record<string, string> = {
   "А": "A",
@@ -211,7 +239,7 @@ export const backpackNames: Recipe = {
       if (gearDetails(seen.lines) || panelIn(seen.img())) {
         throw new Error("an item panel is open when it should not be, stopping to be safe");
       }
-      const spots = withGaps(rowsIn(seen.lines, label))
+      const spots = tileRows(seen.img())
         .filter((y) => y >= 185 && y <= lowest)
         .flatMap((y) => columns.map((x) => ({ x, y })));
       const next = spots.find((spot) => {
@@ -224,14 +252,14 @@ export const backpackNames: Recipe = {
       return page(tab, await visit(tab, seen, next), lowest, taps + 1);
     };
 
-    const pages = async (tab: string, number: number, last: string): Promise<void> => {
+    const pages = async (tab: string, number: number, last: number[]): Promise<void> => {
       const seen = await look(phone);
-      const signature = seen.lines.filter((l) => center(l).y > 185).map((l) => l.text).join("|");
-      if (signature === last || number >= 30) return page(tab, seen, 800, 0);
+      const sample = listSample(seen.img());
+      if (sameList(sample, last) || number >= 40) return page(tab, seen, 800, 0);
       await page(tab, seen, 560, 0);
       await phone.drag({ x: 200, y: 600 }, { x: 200, y: 330 }, 1);
       await sleep(1500);
-      return pages(tab, number + 1, signature);
+      return pages(tab, number + 1, sample);
     };
 
     await requireIphone(phone);
@@ -248,7 +276,7 @@ export const backpackNames: Recipe = {
     for (const tab of tabs.filter((t) => wanted.includes(t.name))) {
       await phone.tap({ x: tab.x, y: tabY });
       await sleep(1500);
-      await pages(tab.name, 0, "");
+      await pages(tab.name, 0, []);
     }
     await phone.tap(backArrow);
     await sleep(1500);

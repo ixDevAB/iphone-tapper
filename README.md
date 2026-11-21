@@ -24,6 +24,7 @@ It looks at the phone screen before every tap and only presses the buttons the r
 | `just collect-backpack`              | Uses gems, hero XP, the small resource items, the plain chests and VIP XP items     |
 | `just train-troops`                  | Collects finished troops and trains new ones                                        |
 | `just collect-water`                 | Collects the water on your island                                                   |
+| `just island-locate-water`           | Finds where your Purifier is, for `collect-water`                                   |
 | `just collect-online`                | Claims the Online Rewards chest                                                     |
 | `just mystic-trial`                  | Plays the Mystic Trials with your troop ratios                                      |
 | `just morning`                       | All of the tasks above, once                                                        |
@@ -289,13 +290,15 @@ The picture only decides which tiles get opened. Using items cannot be undone, s
 ```sh
 just train-troops
 just collect-water
+just island-locate-water
 just collect-online
 ```
 
 These start on the world map or the town map and end on the world map. They find their way through the list at the side of the town map.
 
 - `train-troops` goes through the Barracks, the Stable and the Range. Where nothing is training it presses **Train** with the tier and amount the game suggests, which also collects the finished troops. It never presses **Finish** or **Speedups**.
-- `collect-water` goes to your island and taps the water above the Fountain of Life. It does not collect from the Purifier yet.
+- `collect-water` goes to your island and collects from the Fountain of Life, and from the Purifier when `ISLAND_PURIFIER` in `.env` says where it is.
+- `island-locate-water` finds that place with your help, because everyone has built their island differently: it shows the island piece by piece, you tap your Purifier until its buttons show, and it writes `ISLAND_PURIFIER` to `.env`. Run it again when you move the Purifier.
 - `collect-online` opens the Online Rewards chest at the storehouse when it is ready, and tells you when the next one is.
 
 ### Mystic Trial
@@ -616,6 +619,7 @@ Change a value, save, and start again.
 | `BACKPACK_MAX_USES`                                                                                                                 | Backpack: stop after using this many stacks                                                                 | `60`                                              |
 | `BACKPACK_ITEMS`                                                                                                                    | Backpack: the other items to use, by name, separated by commas                                              | the chests and VIP XP items listed under Backpack |
 | `TRIAL_COLISEUM`, `TRIAL_FOREST_OF_LIFE`, `TRIAL_CRYSTAL_CAVE`, `TRIAL_KNOWLEDGE_NEXUS`, `TRIAL_MOLTEN_FORT`, `TRIAL_RADIANT_SPIRE` | Mystic Trial: troop ratio as infantry/cavalry/archer, adding up to 100                                      | none, the trial is skipped                        |
+| `ISLAND_PURIFIER`                                                                                                                   | Water: where the Purifier is on your island, written by `just island-locate-water`                          | none, only the fountain is collected              |
 | `DAY_RESET_UTC_HOUR`                                                                                                                | Rounds: the hour (UTC) the game's day starts, for the once a day tasks                                      | `0`                                               |
 | `INTEL_PAN`                                                                                                                         | Intel: `1` presses the Pan skill at the start (same as `--pan`)                                             | off                                               |
 | `STAMINA_STOREHOUSE`                                                                                                                | Intel and Terror: `1` lets it claim the Gourmet Feast (same as `--storehouse`)                              | off                                               |

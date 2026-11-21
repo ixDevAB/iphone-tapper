@@ -24,8 +24,10 @@ Updated 2026-11-21.
 - Intel stopped with markers left and did not press Pan in one morning run. The next run saves build/intel-end.png and build/intel-pan.png.
 - The daily reset is assumed to be 00:00 UTC (DAY_RESET_UTC_HOUR).
 - Over Wi-Fi the helper takes minutes to start. Use the cable.
-- collect-water only knows the Fountain of Life. The Purifier was not found on the island: the buildings to the right of the fountain turned out to be Court of ..., Small Coliseum, Whispering Path and Reservoir. Island buildings show Dismantle and Retrieve buttons when selected, so no more guessing taps there.
-- collect-water: its own run found nothing to collect (the fountain had just been emptied by hand), so the tap on the water bubble is untested in the task.
+- collect-water pressed Collect on the Purifier once (2026-11-22) with ISLAND_PURIFIER written by hand. In that run it collected nothing at the fountain and did not select it; the fountain may have been empty. The fountain step of the new version is unconfirmed.
+- island-locate-water has not completed a run that saves the place itself. A building is recognised by its Details and Retrieve buttons, not by its name, so tapping another building saves that one.
+- collect-water switches "Hide after mission completion" off in the town list when the fountain row is hidden, and on again afterwards. Stopping it halfway can leave it off.
+- Island buildings show Dismantle and Retrieve buttons when selected. The water tasks only ever press a button that reads Collect.
 - train-troops: its run found all three buildings training, so its Train press is untested in the task. Done by hand it collected the finished troops and started 1,517 of the top tier.
 - mystic-trial ran Knowledge Nexus (31-7 to 32-5) and Molten Fort (five losses at 34-8). Coliseum, Forest of Life, Crystal Cave and Radiant Spire were not open, so their names and screens are untested. A lost fight costs an attempt, a won one seems not to.
 - The town tasks and mystic-trial are in morning, evening and run since 2026-11-21, but no round has been run with them yet.

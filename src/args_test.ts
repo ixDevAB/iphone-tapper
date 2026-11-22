@@ -1,5 +1,5 @@
 import { assertEquals } from "@std/assert";
-import { readArgs } from "./args.ts";
+import { readArgs, savedArgs } from "./args.ts";
 import type { Recipe } from "./recipe.ts";
 import { recipes } from "./recipes.ts";
 
@@ -55,6 +55,20 @@ Deno.test("the rounds accept the arguments of their tasks", () => {
   assertEquals(readArgs(recipes.run, ["--only", "recruit,shop"]).env, { RUN_ONLY: "recruit,shop" });
   assertEquals(readArgs(recipes["collect-all"], ["--force"]).error, undefined);
   assertEquals(readArgs(recipes["claim-all"], ["--force"]).error?.startsWith("unknown argument --force"), true);
+});
+
+Deno.test("a task takes its saved arguments from the settings, and typed ones are added", () => {
+  const env = { MORNING_ARGS: " --pan  --gourmet --buy-vip ", TERROR_HUNT_ARGS: "2 --arch diana" };
+  assertEquals(savedArgs(env, "morning"), ["--pan", "--gourmet", "--buy-vip"]);
+  assertEquals(savedArgs(env, "terror-hunt"), ["2", "--arch", "diana"]);
+  assertEquals(savedArgs(env, "evening"), []);
+  assertEquals(readArgs(recipes.morning, [...savedArgs(env, "morning"), "--embrace"]).env, {
+    INTEL_PAN: "1",
+    STAMINA_STOREHOUSE: "1",
+    SHOP_BUY_VIP: "1",
+    STAMINA_EMBRACE: "1",
+  });
+  assertEquals(readArgs(recipes.morning, ["--dry-run"]).env, { DRY_RUN: "1" });
 });
 
 Deno.test("flags of one recipe are not accepted by another", () => {

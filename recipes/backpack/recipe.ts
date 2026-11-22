@@ -20,11 +20,11 @@ export const collectBackpack: Recipe = {
   description:
     "Backpack: uses all gems, all hero XP, the grey and green resource items (change with --rss grey,green,blue,purple), the plain chests and the VIP XP items, then opens every tab to clear the red dots. It knows the items by their pictures and only opens the ones it will use. With --dry-run it only says what it would use.",
   flags: { "--rss": "BACKPACK_RSS" },
-  switches: { "--dry-run": "BACKPACK_DRY_RUN" },
+  switches: { "--dry-run": "DRY_RUN" },
   run: async (phone, settings) => {
     const time = clock(settings.env.CLOCK);
     const maxUses = Number(settings.env.BACKPACK_MAX_USES || 60);
-    const dry = on(settings.env, "BACKPACK_DRY_RUN");
+    const dry = on(settings.env, "DRY_RUN");
     const known = ["grey", "green", "blue", "purple"];
     const colours = (settings.env.BACKPACK_RSS || "grey,green").toLowerCase().split(",").map((c) => c.trim())
       .filter((c) => c);

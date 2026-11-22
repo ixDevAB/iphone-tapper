@@ -1,37 +1,20 @@
-import { isRed } from "../../src/dots.ts";
+import { decide } from "../../src/decisions.ts";
 import { exitLine, look, requireIphone } from "../../src/flow.ts";
 import { crop, type Image, scaleUp } from "../../src/image.ts";
 import type { Phone } from "../../src/phone.ts";
-import { count } from "../../src/pixels.ts";
 import type { Recipe } from "../../src/recipe.ts";
 import { rewardCounter } from "../../src/rewards.ts";
 import { backArrow, center, points, scale } from "../../src/screen.ts";
 import { clock, sleep } from "../../src/time.ts";
 import { atTown } from "../../src/world.ts";
+import { contentDots, isFreeLabel, redShapes, tabDots } from "./dots.ts";
 
 const cartButton = { x: 343, y: 68 };
 const exitSpot = { x: 200, y: 798 };
 const tabY = 142;
-const bar = { top: 375, bottom: 495 };
 const bands = [480, 1000, 1520, 1930];
 const bandHeight = 620;
 const price = /\d+[.,]\d\d\s*\S{0,3}$|[$€£]/;
-
-const redDots = (img: Image) =>
-  Array.from(
-    { length: img.width },
-    (_, x) => count(img, { x, y: bar.top, width: 1, height: bar.bottom - bar.top }, isRed),
-  )
-    .flatMap((reds, x) => reds >= 6 ? [x] : [])
-    .reduce<number[][]>(
-      (groups, x) =>
-        groups.length && x - groups[groups.length - 1].at(-1)! <= 3
-          ? [...groups.slice(0, -1), [...groups[groups.length - 1], x]]
-          : [...groups, [x]],
-      [],
-    )
-    .filter((group) => group.length >= 12 && group.length <= 60)
-    .map((group) => Math.round((group[0] + group[group.length - 1]) / 2 / scale));
 
 const labelsIn = async (phone: Phone, img: Image) => {
   const found: { text: string; x: number; y: number }[] = [];
@@ -51,7 +34,7 @@ const labelsIn = async (phone: Phone, img: Image) => {
 
 export const claimFreebies: Recipe = {
   description:
-    "Opens the store (the shopping cart), goes through the tabs that have a red dot and claims what is marked Free or Claimable. Never presses a button with a price.",
+    "Opens the store (the shopping cart), goes through the tabs that have a red dot and claims what is marked Free or Claimable or has a red dot of its own. Never presses a button with a price.",
   run: async (phone, settings) => {
     const time = clock(settings.env.CLOCK);
     const rewards = rewardCounter(phone);
@@ -67,43 +50,65 @@ export const claimFreebies: Recipe = {
       return true;
     };
 
-    const claimOnTab = async (claimed: number, tries: number, scrolls = 0, lastSeen = ""): Promise<number> => {
-      if (tries <= 0) return claimed;
-      if (await dismiss()) return claimOnTab(claimed, tries, scrolls, lastSeen);
+    type Spot = { x: number; y: number };
+    const close = (a: Spot, b: Spot) => Math.abs(a.x - b.x) < 12 && Math.abs(a.y - b.y) < 12;
+
+    const targetsOn = async () => {
       const { img } = await look(phone);
       const labels = await labelsIn(phone, img());
-      const seen = labels.map((l) => l.text).join("|");
       const prices = labels.filter((l) => price.test(l.text));
-      const free = labels.find((l) =>
-        /^(free|claimable|claim)$/i.test(l.text) &&
-        !prices.some((p) => Math.abs(p.y - l.y) < 45 && Math.abs(p.x - l.x) < 110)
-      );
-      if (!free) {
+      const priced = (spot: Spot) => prices.some((p) => Math.abs(p.y - spot.y) < 45 && Math.abs(p.x - spot.x) < 110);
+      const byLabel = labels
+        .filter((l) => isFreeLabel(l.text) && !priced(l))
+        .map((l) => ({ why: `the label "${l.text}"`, at: { x: l.x, y: l.y }, tap: { x: l.x, y: l.y - 20 } }));
+      const byDot = contentDots(redShapes(img()))
+        .map((dot) => ({ why: "a red dot", at: dot, tap: { x: dot.x - 14, y: dot.y + 12 } }))
+        .filter((t) =>
+          !priced(t.tap) && !byLabel.some((l) => Math.abs(l.tap.x - t.tap.x) < 40 && Math.abs(l.tap.y - t.tap.y) < 40)
+        );
+      return { targets: [...byLabel, ...byDot], seen: labels.map((l) => l.text.replace(/\d/g, "")).join("|") };
+    };
+
+    const claimOnTab = async (
+      claimed: number,
+      tries: number,
+      scrolls: number,
+      lastSeen: string,
+      tried: Spot[],
+    ): Promise<number> => {
+      if (await dismiss()) return claimOnTab(claimed, tries, scrolls, lastSeen, tried);
+      const { targets, seen } = await targetsOn();
+      const target = targets.find((t) => !tried.some((spot) => close(spot, t.at)));
+      if (!target || tries <= 0) {
         if (scrolls >= maxScrolls || seen === lastSeen) return claimed;
         await phone.drag({ x: 12, y: 700 }, { x: 12, y: 300 }, 0.8);
         await sleep(1500);
-        return claimOnTab(claimed, tries, scrolls + 1, seen);
+        return claimOnTab(claimed, tries, scrolls + 1, seen, []);
       }
-      log(`claiming "${free.text}"`);
-      await phone.tap({ x: free.x, y: free.y - 20 });
+      log(`claiming at ${target.why}`);
+      await decide("tapped something free", { why: target.why, x: target.tap.x, y: target.tap.y });
+      await phone.tap(target.tap);
       await sleep(2000);
-      await dismiss();
-      return claimOnTab(claimed + 1, tries - 1, scrolls, "");
+      const popup = await dismiss();
+      const after = await targetsOn();
+      const gone = !after.targets.some((t) => close(t.at, target.at));
+      await decide(gone || popup ? "it was claimed" : "it is still there", { why: target.why });
+      return claimOnTab(claimed + (gone || popup ? 1 : 0), tries - 1, scrolls, "", [...tried, target.at]);
     };
 
     const pages = async (page: number, total: number, lastBar: string): Promise<number> => {
-      const { img, lines } = await look(phone);
+      const { lines } = await look(phone);
       const names = lines.filter((l) => center(l).y > 125 && center(l).y < 165).map((l) => l.text).join("|");
-      if (page >= 7 || (page > 0 && names === lastBar)) return total;
-      const dots = redDots(img());
-      const visit = async (index: number, sum: number): Promise<number> => {
-        const dot = dots[index];
-        if (dot === undefined) return sum;
-        await phone.tap({ x: Math.max(40, dot - 45), y: tabY });
+      if (page >= 8 || (page > 0 && names === lastBar)) return total;
+      const visit = async (done: number[], sum: number): Promise<number> => {
+        const dot = tabDots(redShapes((await look(phone)).img())).find((x) => !done.some((d) => Math.abs(d - x) < 30));
+        if (dot === undefined || done.length >= 5) return sum;
+        await decide("opening a store tab with a red dot", { x: dot });
+        await phone.tap({ x: Math.max(30, dot - 20), y: tabY });
         await sleep(2000);
-        return visit(index + 1, sum + await claimOnTab(0, 8));
+        return visit([...done, dot], sum + await claimOnTab(0, 6, 0, "", []));
       };
-      const claimed = await visit(0, 0);
+      const claimed = await visit([], 0);
       await phone.drag({ x: 330, y: 138 }, { x: 90, y: 138 }, 0.6);
       await sleep(1500);
       return pages(page + 1, total + claimed, names);
@@ -114,6 +119,10 @@ export const claimFreebies: Recipe = {
     if (!atTown(start.lines)) throw new Error("start on the world map");
     await phone.tap(cartButton);
     await sleep(3000);
+    for (const _ of [1, 2, 3]) {
+      await phone.drag({ x: 90, y: 138 }, { x: 330, y: 138 }, 0.4);
+      await sleep(700);
+    }
     const total = await pages(0, 0, "");
     await dismiss();
     await phone.tap(backArrow);

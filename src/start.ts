@@ -1,4 +1,4 @@
-import { readArgs } from "./args.ts";
+import { readArgs, savedArgs } from "./args.ts";
 import { config } from "./config.ts";
 import { decide, rotate, traced } from "./decisions.ts";
 import { findPhone } from "./device.ts";
@@ -17,7 +17,9 @@ if (!recipe) {
   Deno.exit(1);
 }
 
-const args = readArgs(recipe, Deno.args.slice(1));
+const saved = savedArgs(config.env, name);
+if (saved.length) console.log(`with your arguments from .env: ${saved.join(" ")}`);
+const args = readArgs(recipe, [...saved, ...Deno.args.slice(1)]);
 if (args.error) {
   console.log(args.error);
   Deno.exit(1);

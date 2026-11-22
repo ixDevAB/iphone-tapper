@@ -127,7 +127,11 @@ Open the world map (or the Intel Mission screen) and start it. For every marker 
 | Animal | **Attack**, then **Deploy** with the troops the game suggests |
 | Fight  | **Conquer**, then **Fight** with the squad already set        |
 
-It does not wait for marches: it sends one and takes the next marker right away. When no marker is left it waits a moment for the marches, presses **Claim All**, and carries on with any new markers that show up. It also collects before it stops for lack of stamina.
+It does not wait for marches: it sends one and takes the next marker right away, as long as a marker is left that it has not sent. A marker with a green check is finished and is left for **Claim All**. Only when every marker is sent does it give the ones still on the way up to 30 seconds, press **Claim All**, and carry on with any markers that show up after that. It also collects before it stops for lack of stamina.
+
+It never attacks the Gilded Baron (Rebel Bounty). It leaves his marker, the hexagon with flames, alone, and it does not press **Attack** on a target whose name says Rebel Bounty or Gilded Baron. For any other animal it backs out without sending when the Deploy screen says the deployment will fail.
+
+When it stops with markers still open it says how many and why (`markers left: 1 sent but not finished, 1 rebel bounty left alone`) and saves the screen in `build/intel-end.png`.
 
 Animals need a free march. When the march list on the world map shows all marches in use (for example 6/6), it waits up to a minute for one to come back, and skips that animal if none does. Tents and fights do not need a march.
 
@@ -163,7 +167,7 @@ It recognises rewards by their picture, see [Name the rewards](#name-the-rewards
 just terror-hunt 3
 ```
 
-Start it on the world map. For each rally it opens the search, picks **Terror** at level 8, presses **Search**, **Rally**, **Hold a rally** (with the rally time the game has selected) and **Deploy**. The number is how many rallies to hold; without it, it holds one.
+Start it on the world map. For each rally it opens the search, picks **Terror** at level 8 by reading the name under the tile (it scrolls the list back when it shows the resources instead, and stops when it cannot find Terror rather than search for something else), presses **Search**, **Rally**, **Hold a rally** (with the rally time the game has selected) and **Deploy**. The number is how many rallies to hold; without it, it holds one.
 
 ```sh
 just terror-hunt 3 --level 7
@@ -224,11 +228,14 @@ Start it on the world map. It opens **Heroes** and **Recruit Heroes** and presse
 ```sh
 just shop
 just shop --buy-vip
+just shop --buy-vip --dry-run
 ```
 
 Start it on the world map. It opens **Shop** and buys every Nomadic Merchant item that costs resources (bread, wood, stone, iron). When only gem items are left it presses **Free Refresh** and starts over, until there is no free refresh left.
 
-It never buys with gems, with one exception: with `--buy-vip` it also buys the VIP XP item (the yellow V). A gem purchase opens a **Buy** window, and it only confirms when that window says VIP XP.
+It never buys with gems, with one exception: with `--buy-vip` it also buys the VIP XP item (the yellow V). A gem purchase opens a **Buy** window, and it only confirms when that window says VIP XP and shows the price it read in the list. The game then asks **Confirm to spend 15 gems to purchase this item?** It answers only when that amount, the price in the Buy window and the price in the list are the same number; otherwise it closes the question and stops. It leaves **Don't show this again today** alone.
+
+With `--dry-run` it opens every item it would buy, says where it would press the buy button, closes the window again and presses no **Free Refresh**. Nothing is bought.
 
 ### Free items in the store
 
@@ -237,6 +244,8 @@ just claim-freebies
 ```
 
 Start it on the world map. It opens the store (the shopping cart), opens every tab that has a red dot, and scrolls down through it looking for things marked **Free**, **Claimable** or **Claim**. It claims those. It never presses a button with a price on it, and it skips a label that sits next to a price.
+
+The store looks different every day, so it goes by what it sees: a small red dot on a tab means something in that tab can be claimed, and inside the tab it taps what is labelled **Free**, **Claimable** or **Claim**, or what has a red dot of its own. The red circle with an exclamation mark at the edge of the tab row only says that a tab with a dot is further along; it pages through all the tabs anyway.
 
 ### VIP claims
 
@@ -307,7 +316,14 @@ These start on the world map or the town map and end on the world map. They find
 just mystic-trial
 ```
 
-Start it on the world map or the town map. In every trial that is open today it presses **Challenge**, sets your troop ratio with **Balance**, presses **Deploy** and skips the fight, until that trial has no attempts left. A won fight moves on to the next stage, a lost one is tried again.
+Start it on the world map or the town map. It finds the trial in the list at the side of the town map, scrolling the list when it is further down. In every trial that is open today it:
+
+1. presses **Raid** and **Claim** when the trial offers the raid rewards
+2. presses **Challenge**, sets your troop ratio with **Balance**, presses **Deploy** and skips the fight
+3. presses **Retry** after a lost fight, until that trial has no attempts left (a won fight moves on to the next stage by itself)
+4. opens **Battle Report** and presses **Read All**
+
+Radiant Spire fights with three squads: there it presses **Quick Deploy**, opens **Edit Formation** for each squad to set the ratio, and then presses **Deploy**.
 
 The ratios are infantry/cavalry/archer in `.env`, one line per trial. A trial without a line is skipped:
 
@@ -330,7 +346,7 @@ Start it on the world map. It runs sixteen tasks one after the other and returns
 2. two Terror rallies with Diana as archer and Fahd as cavalry (change with a number, `--arch`, `--cav`, `--inf` and `--level`)
 3. all the mail
 4. the alliance chests and contributions
-5. the Nomadic Merchant, including the VIP XP item for gems
+5. the Nomadic Merchant (with `--buy-vip` also the VIP XP item for gems)
 6. the free hero recruits
 7. the pet skills, pet adventures and ally treasure
 8. the free items in the store
@@ -343,6 +359,8 @@ Start it on the world map. It runs sixteen tasks one after the other and returns
 15. the Mystic Trials
 16. the daily missions, last so it also claims what the other steps completed
 
+`--dry-run` goes to the Nomadic Merchant and the Backpack: both only say what they would buy or use.
+
 If one task stops early, the round carries on with the next one. The tasks that only make sense once a day (the Terror rallies, the store freebies, the VIP claims and the Mystic Trials) are left out when they already went well today, see [What ran and when](#what-ran-and-when).
 
 ### Evening round
@@ -354,6 +372,18 @@ just evening --pan --gourmet --embrace
 The morning round without the Terror rallies, the store freebies and the VIP claims. It runs the other thirteen in the same order and takes the same arguments, except the ones for the Terror rallies.
 
 The Mystic Trials are in both rounds, but only played once a day: when the run log shows they already went well today, the round leaves them out and says so. A trial that still has attempts because the task stopped early is picked up by the next round.
+
+### Your own arguments for the rounds
+
+Everyone plays differently, so the arguments you always use can live in your own `.env` instead of being typed every time:
+
+```
+MORNING_ARGS=--pan --gourmet --embrace --buy-vip
+EVENING_ARGS=--pan --gourmet
+RUN_ARGS=--buy-vip
+```
+
+`just morning` then runs as if you had typed them, and says so when it starts. What you type after the task still counts and is added to them. The same works for every task: the setting is the task's name in capitals with `_ARGS` after it, for example `INTEL_ARGS=--pan` or `TERROR_HUNT_ARGS=2 --arch diana --cav fahd`.
 
 ### Collect all and claim all
 
@@ -581,53 +611,55 @@ open -e .env
 
 Change a value, save, and start again.
 
-| Setting                                                                                                                             | What it does                                                                                                | Default                                           |
-| ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| `TEAM_ID`                                                                                                                           | Which Apple developer team signs the helper app                                                             | Found automatically                               |
-| `BUNDLE_ID`                                                                                                                         | Name of the helper app on the phone                                                                         | Made from your team                               |
-| `INTERVAL_MS`                                                                                                                       | Pause after each tap, in milliseconds                                                                       | `0`                                               |
-| `MAX_IDLE_SECONDS`                                                                                                                  | Stop when there has been nothing to press this long                                                         | `600`                                             |
-| `CLOCK`                                                                                                                             | Time format in the output: `24h` (14:52:08) or `12h` (2:52:08 PM)                                           | `24h`                                             |
-| `TROOPS_PER_ALLY_XI`                                                                                                                | Heal: how many tier XI troops one helping ally heals                                                        | `60`                                              |
-| `TROOPS_PER_ALLY_X`                                                                                                                 | Heal: how many tier X troops one helping ally heals                                                         | `140`                                             |
-| `TROOPS_PER_ALLY`                                                                                                                   | Heal: troops per ally for any other tier                                                                    | `60`                                              |
-| `CALIBRATE_START`                                                                                                                   | Heal: how many troops the first measuring heal uses (same as `--start`)                                     | `10`                                              |
-| `CALIBRATE_STEP`                                                                                                                    | Heal: how many troops each measuring heal adds (same as `--increment`)                                      | `10`                                              |
-| `CALIBRATE_TIER`                                                                                                                    | Heal: which tier to measure, `XI` or `X` (same as `--tier`)                                                 | `XI`                                              |
-| `CALIBRATE_MAX`                                                                                                                     | Heal: stop measuring at this many troops                                                                    | `2000`                                            |
-| `CALIBRATE_MAX_ROUNDS`                                                                                                              | Heal: give up measuring, and give up confirming, after this many heals                                      | `40`                                              |
-| `CALIBRATE_SETTLE_SECONDS`                                                                                                          | Heal: keep reading the assist message this long after a heal finished                                       | `2`                                               |
-| `CALIBRATE_LEFT_SECONDS`                                                                                                            | Heal: a heal with this many seconds or fewer left on its timer after the assists does not count as finished | `15`                                              |
-| `CALIBRATE_CONFIRM`                                                                                                                 | Heal: how many finished heals confirm the result                                                            | `5`                                               |
-| `HELP_DELAY_MS`                                                                                                                     | Heal: pause between pressing Heal and pressing Help, in milliseconds                                        | `100`                                             |
-| `ALLY_TIMEOUT_SECONDS`                                                                                                              | Heal: at the smallest batch, stop when a heal has not finished this long after Help                         | `240`                                             |
-| `CANCEL_AFTER_SECONDS`                                                                                                              | Heal: cancel a bigger heal that has not finished this long after Help                                       | `10`                                              |
-| `START_ALLIES`                                                                                                                      | Heal: how many allies to size the first batch for (same as `--allies`)                                      | `1`                                               |
-| `GROW_AFTER_ROUNDS`                                                                                                                 | Heal: try one ally more after this many heals in a row finished                                             | `10`                                              |
-| `CHECK_ALLIES_EVERY`                                                                                                                | Heal: read how many allies helped on the first round and then every N rounds                                | `10`                                              |
-| `FAST_FINISH_SECONDS`                                                                                                               | Heal: a heal only counts toward growing if it finished this fast after Help                                 | `3`                                               |
-| `MAX_ALLIES`                                                                                                                        | Heal: never size a batch for more allies than this                                                          | `20`                                              |
-| `HOLD_AFTER_CANCEL_SECONDS`                                                                                                         | Heal: after a cancel, do not grow the batch again for this long                                             | `300`                                             |
-| `INTEL_STAMINA`                                                                                                                     | Intel: how much stamina it may gain from meat (same as `--stamina`)                                         | `0`                                               |
-| `INTEL_STAMINA_NEEDED`                                                                                                              | Intel: refill or stop when the stamina is below this                                                        | `12`                                              |
-| `INTEL_MARCH_WAIT_SECONDS`                                                                                                          | Intel: how long to wait for a free march before skipping an animal                                          | `60`                                              |
-| `INTEL_COLLECT_WAIT_SECONDS`                                                                                                        | Intel: how long to wait for marches before collecting the rewards                                           | `30`                                              |
-| `HUNT_LEVEL`                                                                                                                        | Terror: which level to search for (same as `--level`)                                                       | `8`                                               |
-| `HUNT_RETURN_MINUTES`                                                                                                               | Terror: how long to wait at most for a rally to come back                                                   | `20`                                              |
-| `SHOP_MAX_BUYS`                                                                                                                     | Shop: stop after this many purchases in one run                                                             | `200`                                             |
-| `BACKPACK_RSS`                                                                                                                      | Backpack: which resource colours to use (same as `--rss`)                                                   | `grey,green`                                      |
-| `BACKPACK_MAX_USES`                                                                                                                 | Backpack: stop after using this many stacks                                                                 | `60`                                              |
-| `BACKPACK_ITEMS`                                                                                                                    | Backpack: the other items to use, by name, separated by commas                                              | the chests and VIP XP items listed under Backpack |
-| `TRIAL_COLISEUM`, `TRIAL_FOREST_OF_LIFE`, `TRIAL_CRYSTAL_CAVE`, `TRIAL_KNOWLEDGE_NEXUS`, `TRIAL_MOLTEN_FORT`, `TRIAL_RADIANT_SPIRE` | Mystic Trial: troop ratio as infantry/cavalry/archer, adding up to 100                                      | none, the trial is skipped                        |
-| `ISLAND_PURIFIER`                                                                                                                   | Water: where the Purifier is on your island, written by `just island-locate-water`                          | none, only the fountain is collected              |
-| `DAY_RESET_UTC_HOUR`                                                                                                                | Rounds: the hour (UTC) the game's day starts, for the once a day tasks                                      | `0`                                               |
-| `INTEL_PAN`                                                                                                                         | Intel: `1` presses the Pan skill at the start (same as `--pan`)                                             | off                                               |
-| `STAMINA_STOREHOUSE`                                                                                                                | Intel and Terror: `1` lets it claim the Gourmet Feast (same as `--storehouse`)                              | off                                               |
-| `STAMINA_EMBRACE`                                                                                                                   | Intel and Terror: `1` lets it claim the Comforting Embrace (same as `--embrace`)                            | off                                               |
-| `CONQUEST_FORCE`                                                                                                                    | Conquest: `1` claims without the red dot (same as `--force`)                                                | off                                               |
-| `SHOP_BUY_VIP`                                                                                                                      | Shop: `1` also buys the VIP XP item for gems (same as `--buy-vip`)                                          | off                                               |
-| `OCR_ACCURATE`                                                                                                                      | `0` uses the fast text reader from the start                                                                | `1`                                               |
-| `DEVICE_UDID`                                                                                                                       | Pick a specific iPhone if several are connected                                                             | First connected iPhone                            |
+| Setting                                                                                                                             | What it does                                                                                                  | Default                                           |
+| ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| `TEAM_ID`                                                                                                                           | Which Apple developer team signs the helper app                                                               | Found automatically                               |
+| `BUNDLE_ID`                                                                                                                         | Name of the helper app on the phone                                                                           | Made from your team                               |
+| `INTERVAL_MS`                                                                                                                       | Pause after each tap, in milliseconds                                                                         | `0`                                               |
+| `MAX_IDLE_SECONDS`                                                                                                                  | Stop when there has been nothing to press this long                                                           | `600`                                             |
+| `CLOCK`                                                                                                                             | Time format in the output: `24h` (14:52:08) or `12h` (2:52:08 PM)                                             | `24h`                                             |
+| `TROOPS_PER_ALLY_XI`                                                                                                                | Heal: how many tier XI troops one helping ally heals                                                          | `60`                                              |
+| `TROOPS_PER_ALLY_X`                                                                                                                 | Heal: how many tier X troops one helping ally heals                                                           | `140`                                             |
+| `TROOPS_PER_ALLY`                                                                                                                   | Heal: troops per ally for any other tier                                                                      | `60`                                              |
+| `CALIBRATE_START`                                                                                                                   | Heal: how many troops the first measuring heal uses (same as `--start`)                                       | `10`                                              |
+| `CALIBRATE_STEP`                                                                                                                    | Heal: how many troops each measuring heal adds (same as `--increment`)                                        | `10`                                              |
+| `CALIBRATE_TIER`                                                                                                                    | Heal: which tier to measure, `XI` or `X` (same as `--tier`)                                                   | `XI`                                              |
+| `CALIBRATE_MAX`                                                                                                                     | Heal: stop measuring at this many troops                                                                      | `2000`                                            |
+| `CALIBRATE_MAX_ROUNDS`                                                                                                              | Heal: give up measuring, and give up confirming, after this many heals                                        | `40`                                              |
+| `CALIBRATE_SETTLE_SECONDS`                                                                                                          | Heal: keep reading the assist message this long after a heal finished                                         | `2`                                               |
+| `CALIBRATE_LEFT_SECONDS`                                                                                                            | Heal: a heal with this many seconds or fewer left on its timer after the assists does not count as finished   | `15`                                              |
+| `CALIBRATE_CONFIRM`                                                                                                                 | Heal: how many finished heals confirm the result                                                              | `5`                                               |
+| `HELP_DELAY_MS`                                                                                                                     | Heal: pause between pressing Heal and pressing Help, in milliseconds                                          | `100`                                             |
+| `ALLY_TIMEOUT_SECONDS`                                                                                                              | Heal: at the smallest batch, stop when a heal has not finished this long after Help                           | `240`                                             |
+| `CANCEL_AFTER_SECONDS`                                                                                                              | Heal: cancel a bigger heal that has not finished this long after Help                                         | `10`                                              |
+| `START_ALLIES`                                                                                                                      | Heal: how many allies to size the first batch for (same as `--allies`)                                        | `1`                                               |
+| `GROW_AFTER_ROUNDS`                                                                                                                 | Heal: try one ally more after this many heals in a row finished                                               | `10`                                              |
+| `CHECK_ALLIES_EVERY`                                                                                                                | Heal: read how many allies helped on the first round and then every N rounds                                  | `10`                                              |
+| `FAST_FINISH_SECONDS`                                                                                                               | Heal: a heal only counts toward growing if it finished this fast after Help                                   | `3`                                               |
+| `MAX_ALLIES`                                                                                                                        | Heal: never size a batch for more allies than this                                                            | `20`                                              |
+| `HOLD_AFTER_CANCEL_SECONDS`                                                                                                         | Heal: after a cancel, do not grow the batch again for this long                                               | `300`                                             |
+| `INTEL_STAMINA`                                                                                                                     | Intel: how much stamina it may gain from meat (same as `--stamina`)                                           | `0`                                               |
+| `INTEL_STAMINA_NEEDED`                                                                                                              | Intel: refill or stop when the stamina is below this                                                          | `12`                                              |
+| `INTEL_MARCH_WAIT_SECONDS`                                                                                                          | Intel: how long to wait for a free march before skipping an animal                                            | `60`                                              |
+| `INTEL_COLLECT_WAIT_SECONDS`                                                                                                        | Intel: how long to wait for marches before collecting the rewards                                             | `30`                                              |
+| `HUNT_LEVEL`                                                                                                                        | Terror: which level to search for (same as `--level`)                                                         | `8`                                               |
+| `HUNT_RETURN_MINUTES`                                                                                                               | Terror: how long to wait at most for a rally to come back                                                     | `20`                                              |
+| `SHOP_MAX_BUYS`                                                                                                                     | Shop: stop after this many purchases in one run                                                               | `200`                                             |
+| `BACKPACK_RSS`                                                                                                                      | Backpack: which resource colours to use (same as `--rss`)                                                     | `grey,green`                                      |
+| `BACKPACK_MAX_USES`                                                                                                                 | Backpack: stop after using this many stacks                                                                   | `60`                                              |
+| `BACKPACK_ITEMS`                                                                                                                    | Backpack: the other items to use, by name, separated by commas                                                | the chests and VIP XP items listed under Backpack |
+| `TRIAL_COLISEUM`, `TRIAL_FOREST_OF_LIFE`, `TRIAL_CRYSTAL_CAVE`, `TRIAL_KNOWLEDGE_NEXUS`, `TRIAL_MOLTEN_FORT`, `TRIAL_RADIANT_SPIRE` | Mystic Trial: troop ratio as infantry/cavalry/archer, adding up to 100                                        | none, the trial is skipped                        |
+| `ISLAND_PURIFIER`                                                                                                                   | Water: where the Purifier is on your island, written by `just island-locate-water`                            | none, only the fountain is collected              |
+| `DAY_RESET_UTC_HOUR`                                                                                                                | Rounds: the hour (UTC) the game's day starts, for the once a day tasks                                        | `0`                                               |
+| `INTEL_PAN`                                                                                                                         | Intel: `1` presses the Pan skill at the start (same as `--pan`)                                               | off                                               |
+| `STAMINA_STOREHOUSE`                                                                                                                | Intel and Terror: `1` lets it claim the Gourmet Feast (same as `--storehouse`)                                | off                                               |
+| `STAMINA_EMBRACE`                                                                                                                   | Intel and Terror: `1` lets it claim the Comforting Embrace (same as `--embrace`)                              | off                                               |
+| `CONQUEST_FORCE`                                                                                                                    | Conquest: `1` claims without the red dot (same as `--force`)                                                  | off                                               |
+| `SHOP_BUY_VIP`                                                                                                                      | Shop: `1` also buys the VIP XP item for gems (same as `--buy-vip`)                                            | off                                               |
+| `DRY_RUN`                                                                                                                           | Shop and Backpack: `1` buys and uses nothing and only says what it would do (same as `--dry-run`)             | off                                               |
+| `MORNING_ARGS`, `EVENING_ARGS`, `RUN_ARGS` and so on                                                                                | The arguments a task always gets, see [Your own arguments for the rounds](#your-own-arguments-for-the-rounds) | none                                              |
+| `OCR_ACCURATE`                                                                                                                      | `0` uses the fast text reader from the start                                                                  | `1`                                               |
+| `DEVICE_UDID`                                                                                                                       | Pick a specific iPhone if several are connected                                                               | First connected iPhone                            |
 
 The recipes are made on an iPhone 17 Pro. On other models the buttons sit elsewhere and the recipe tells you it does not fit.
 

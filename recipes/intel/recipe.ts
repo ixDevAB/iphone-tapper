@@ -3,11 +3,11 @@ import { leaveRewards, type Next, press, runFlow, type Seen } from "../../src/fl
 import type { TextLine } from "../../src/ocr.ts";
 import { on, type Recipe } from "../../src/recipe.ts";
 import { rewardCounter } from "../../src/rewards.ts";
-import { backArrow, center, exact, has, saveShot } from "../../src/screen.ts";
+import { backArrow, center, exact, has, like, saveShot } from "../../src/screen.ts";
 import { refill, refillsFrom, staminaDialog, staminaFlags, staminaSwitches } from "../../src/stamina.ts";
 import { clock, sleep } from "../../src/time.ts";
-import { marchesOn, onWorld } from "../../src/world.ts";
-import { findMarkers } from "./markers.ts";
+import { marchesOn, neverAttack, onWorld } from "../../src/world.ts";
+import { findPins } from "./markers.ts";
 
 const intelButton = { x: 369, y: 619 };
 const panButton = { x: 32, y: 170 };
@@ -20,7 +20,7 @@ const actions = [
   { button: "Conquer", kind: "fight" },
 ];
 
-const near = (a: Point, b: Point) => Math.abs(a.x - b.x) < 40 && Math.abs(a.y - b.y) < 40;
+const claimAll = like("Claim All", true);
 
 const staminaOn = (lines: TextLine[]) => {
   const line = lines.find((l) => /^\d+$/.test(l.text.trim()) && center(l).y < 100 && center(l).x > 300);
@@ -43,6 +43,7 @@ export const intel: Recipe = {
     const lostMs = Number(settings.env.INTEL_LOST_SECONDS || 45) * 1000;
 
     type Spot = Point & { colour: string };
+    const same = (a: Spot, b: Spot) => a.colour === b.colour && Math.hypot(a.x - b.x, a.y - b.y) < 20;
     const finishedIntel: string[] = [];
     const rewards = rewardCounter(phone);
 
@@ -50,7 +51,9 @@ export const intel: Recipe = {
       done: number;
       meatUsed: number;
       panTried: boolean;
-      duds: Point[];
+      duds: Spot[];
+      weak: Spot[];
+      leaving: boolean;
       tapped?: Spot;
       current?: Spot;
       sent: Spot[];
@@ -63,7 +66,7 @@ export const intel: Recipe = {
     };
 
     const screen = async (s: State, { png, lines, img }: Seen): Next<State> => {
-      if (await leaveRewards(phone, lines, rewards, has(lines, /Victory/i))) return s;
+      if (await leaveRewards(phone, lines, rewards, has(lines, /Victory/i))) return { ...s, tapped: undefined };
 
       if (staminaDialog(lines)) {
         const result = await refill(phone, lines, refills, s.meatUsed, needed, log);
@@ -82,6 +85,19 @@ export const intel: Recipe = {
       }
 
       const deploy = exact(lines, "Deploy").find((l) => center(l).y > 700);
+      if (deploy && has(lines, /\bfail\b/i)) {
+        log("the game says this deployment will fail, not sending it and leaving this marker alone");
+        await phone.tap(backArrow);
+        await sleep(1500);
+        return {
+          ...s,
+          deploys: 0,
+          kind: undefined,
+          current: undefined,
+          leaving: true,
+          weak: s.current ? [...s.weak, s.current] : s.weak,
+        };
+      }
       if (deploy) {
         if (s.deploys >= 3) {
           console.log(`${time()} deploy did not go through, all marches may be busy, trying again in 15s`);
@@ -94,7 +110,20 @@ export const intel: Recipe = {
       }
 
       const action = actions.flatMap((a) => exact(lines, a.button).map((line) => ({ ...a, line })))[0];
-      if (action && s.empty) {
+      if (action && has(lines, neverAttack)) {
+        log("this is the Gilded Baron (Rebel Bounty), it is never attacked");
+        await phone.tap(intelButton);
+        await sleep(1500);
+        const spot = s.tapped ?? s.current;
+        return {
+          ...s,
+          tapped: undefined,
+          current: undefined,
+          kind: undefined,
+          weak: spot ? [...s.weak, spot] : s.weak,
+        };
+      }
+      if (action && (s.empty || s.leaving)) {
         await phone.tap(intelButton);
         await sleep(1500);
         return s;
@@ -136,12 +165,12 @@ export const intel: Recipe = {
         return s;
       }
 
-      if (has(lines, /^Intel Mission$/i)) {
+      if (has(lines, /Intel Mission\s*$/i)) {
         const marching = s.kind && s.kind !== "fight" && s.current ? [...s.sent, s.current] : s.sent;
         if (s.kind) finishedIntel.push(`${s.current?.colour ?? "unknown"} ${s.kind}`);
         const finished = s.kind
-          ? { ...s, done: s.done + 1, kind: undefined, current: undefined, deploys: 0, sent: marching }
-          : s;
+          ? { ...s, done: s.done + 1, kind: undefined, current: undefined, deploys: 0, sent: marching, leaving: false }
+          : { ...s, leaving: false };
         const screen = img();
         if (usePan && !s.panTried) {
           const panDifference = difference(screen, pan.img, pan.x, pan.y);
@@ -162,18 +191,20 @@ export const intel: Recipe = {
         }
         const stamina = staminaOn(lines);
         if (stamina !== undefined && stamina !== s.stamina) console.log(`${time()} stamina ${stamina}`);
-        if (stamina !== undefined && stamina < needed && !s.empty) {
+        const duds = s.tapped ? [...s.duds, s.tapped] : s.duds;
+        const pins = findPins(screen);
+        const open = pins.filter((p) => !p.done);
+        const bounty = open.filter((p) => p.colour === "flame");
+        const away = open.filter((p) => finished.sent.some((d) => same(d, p)));
+        const strong = open.filter((p) => s.weak.some((d) => same(d, p)));
+        const stuck = open.filter((p) => !away.includes(p) && duds.some((d) => same(d, p)));
+        const todo = open.filter((p) => ![...bounty, ...away, ...strong, ...stuck].includes(p));
+        const marker = s.empty ? undefined : todo[0];
+        if (marker && stamina !== undefined && stamina < needed) {
           await phone.tap(staminaPlus);
           await sleep(1500);
-          return { ...finished, stamina };
+          return { ...finished, stamina, tapped: undefined, duds };
         }
-        const duds = s.tapped ? [...s.duds, s.tapped] : s.duds;
-        const found = findMarkers(screen);
-        const checks = found.filter((m) => m.kind === "check").length;
-        const pending = Math.max(0, finished.sent.length - checks);
-        const marker = s.empty
-          ? undefined
-          : found.find((m) => m.kind !== "check" && ![...duds, ...finished.sent].some((d) => near(d, m)));
         if (marker) {
           await phone.tap(marker);
           await sleep(1500);
@@ -181,37 +212,44 @@ export const intel: Recipe = {
             ...finished,
             stamina,
             duds,
-            tapped: { x: marker.x, y: marker.y, colour: marker.kind },
+            tapped: { x: marker.x, y: marker.y, colour: marker.colour },
             collectSince: undefined,
           };
         }
-        const claim = exact(lines, "Claim All")[0];
+        const claim = lines.find((l) => claimAll.test(l.text));
         const since = s.collectSince ?? Date.now();
-        const waiting = pending > 0 && Date.now() - since < collectWaitMs;
+        const waiting = away.length > 0 && Date.now() - since < collectWaitMs;
         if (claim && !waiting) {
           console.log(`${time()} collecting rewards`);
           await press(phone, claim);
-          return { ...finished, stamina, duds, tapped: undefined, sent: [], collectSince: undefined };
+          return { ...finished, stamina, duds, tapped: undefined, collectSince: since };
         }
         if (waiting) {
           if (!s.collectSince) {
             console.log(
-              `${time()} waiting for ${pending} of ${finished.sent.length} sent intel to finish before collecting`,
+              `${time()} everything is sent, giving the ${away.length} still on the way up to ${
+                Math.round(collectWaitMs / 1000)
+              }s before collecting`,
             );
           }
           await sleep(3000);
           return { ...finished, stamina, duds, tapped: undefined, collectSince: since };
         }
         await saveShot("intel-end.png", png);
-        const pins = found.filter((m) => m.kind !== "check");
         console.log(
-          `${time()} markers on the last screen: ${pins.length} seen, ${
-            pins.filter((m) => duds.some((d) => near(d, m))).length
-          } skipped because a tap on them opened nothing, ${
-            pins.filter((m) => finished.sent.some((d) => near(d, m))).length
-          } skipped as already sent (screenshot in build/intel-end.png)`,
+          `${time()} markers on the last screen: ${
+            pins.length - open.length
+          } finished, ${todo.length} not done, ${stuck.length} that opened nothing when tapped, ${away.length} sent but not finished, ${strong.length} not attacked, ${bounty.length} rebel bounty (screenshot in build/intel-end.png)`,
         );
-        return s.empty ? `${s.empty}, ${finished.done} done` : `no intel left to do, ${finished.done} done`;
+        const left = [
+          todo.length ? `${todo.length} not done` : "",
+          stuck.length ? `${stuck.length} opened nothing when tapped` : "",
+          away.length ? `${away.length} sent but not finished` : "",
+          strong.length ? `${strong.length} not attacked` : "",
+          bounty.length ? `${bounty.length} rebel bounty left alone` : "",
+        ].filter((text) => text).join(", ");
+        if (s.empty) return `${s.empty}, ${finished.done} done${left ? `, markers left: ${left}` : ""}`;
+        return left ? `markers left: ${left}, ${finished.done} done` : `no intel left to do, ${finished.done} done`;
       }
 
       if (onWorld(lines)) {
@@ -224,7 +262,7 @@ export const intel: Recipe = {
     await runFlow(phone, {
       name: "intel",
       lostMs,
-      start: { done: 0, meatUsed: 0, panTried: false, duds: [], sent: [], deploys: 0 },
+      start: { done: 0, meatUsed: 0, panTried: false, duds: [], weak: [], leaving: false, sent: [], deploys: 0 },
       screen,
     }).finally(() => {
       const counts = Object.entries(Object.groupBy(finishedIntel, (name) => name)).map(([name, all]) =>

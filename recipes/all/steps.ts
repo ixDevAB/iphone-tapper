@@ -39,7 +39,7 @@ export const steps: Step[] = [
   { name: "terror-hunt", recipe: terrorHunt, every: "day", env: twoRallies },
   { name: "claim-mail", recipe: claimMail, every: 2 * hour },
   { name: "claim-alliance", recipe: claimAlliance, every: 2 * hour },
-  { name: "shop", recipe: shop, every: 30 * minute, env: (env) => ({ ...env, SHOP_BUY_VIP: "1" }) },
+  { name: "shop", recipe: shop, every: 30 * minute },
   { name: "recruit", recipe: recruit, every: 30 * minute },
   { name: "collect-pet", recipe: collectPet, every: 4 * hour },
   { name: "claim-freebies", recipe: claimFreebies, every: "day" },

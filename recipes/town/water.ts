@@ -7,13 +7,12 @@ import { count } from "../../src/pixels.ts";
 import type { Recipe } from "../../src/recipe.ts";
 import { center, exact, scale } from "../../src/screen.ts";
 import { clock, sleep } from "../../src/time.ts";
-import { panel, row, tapUntil, toWorld } from "../../src/town.ts";
+import { panel, row, toWorld } from "../../src/town.ts";
 import { withSetting } from "../heal/calibrate.ts";
 
 const envFile = new URL("../../.env", import.meta.url);
 const setting = "ISLAND_PURIFIER";
 const fountain = { x: 201, y: 340 };
-const bubble = [{ x: 201, y: 209 }, { x: 201, y: 225 }, { x: 201, y: 193 }];
 const hideBox = { x: 234, y: 560 };
 const dragFrom = { x: 200, y: 420 };
 const below = [55, 35, 75];
@@ -191,12 +190,18 @@ export const collectWater: Recipe = {
     const start = await look(phone);
     const before = waterOn(start.lines);
     if (!labelled(start.lines, /Fountain of Life/i)) {
-      await tapUntil(phone, bubble, (seen) => (waterOn(seen.lines) ?? 0) > (before ?? Infinity), 3000);
       await phone.tap(fountain);
-      await sleep(1500);
+      await sleep(2500);
     }
-    const selected = labelled((await look(phone)).lines, /Fountain of Life/i);
+    const chosen = await look(phone);
+    const selected = labelled(chosen.lines, /Fountain of Life/i);
+    const other = selected
+      ? undefined
+      : chosen.lines.find((l) => center(l).y > 95 && center(l).y < 300 && /[a-z]{4}/i.test(l.text));
     if (selected) await press("Fountain of Life");
+    if (!selected) {
+      log(`the fountain was not in the middle of the island view${other ? ` (${other.text.trim()} is)` : ""}`);
+    }
     const afterFountain = waterOn((await look(phone)).lines);
     await decide("collected at the fountain", { before, after: afterFountain, selected: Boolean(selected) });
 

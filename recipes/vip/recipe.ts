@@ -12,7 +12,15 @@ const plus = { x: 295, y: 211 };
 const chestDot = { x: 1071, y: 557, width: 50, height: 50 };
 const plusDot = { x: 895, y: 569, width: 50, height: 50 };
 
-type State = { bundle: number; chest: number; plus: number; uses: number; opens: number; leaving: boolean };
+type State = {
+  bundle: number;
+  chest: number;
+  plus: number;
+  uses: number;
+  opens: number;
+  leaving: boolean;
+  continues: number;
+};
 
 export const claimVip: Recipe = {
   description:
@@ -28,9 +36,11 @@ export const claimVip: Recipe = {
       const next = matching(lines, /click to continue/i);
       if (next) {
         const xp = matching(lines, /Get VIP XP/i)?.text.trim();
-        if (xp) log(`sign-in chest: ${xp}`);
-        await press(phone, next);
-        return s;
+        if (xp && !s.continues) log(`sign-in chest: ${xp}`);
+        if (s.continues >= 8) return "the sign-in rewards would not close, close them by hand";
+        await phone.tap({ x: center(next).x, y: center(next).y - 150 });
+        await sleep(1500);
+        return { ...s, continues: s.continues + 1 };
       }
 
       if (exact(lines, "Increase Level").length) {
@@ -82,7 +92,7 @@ export const claimVip: Recipe = {
     await runFlow(phone, {
       name: "vip",
       lostMs: Number(settings.env.VIP_LOST_SECONDS || 45) * 1000,
-      start: { bundle: 0, chest: 0, plus: 0, uses: 0, opens: 0, leaving: false },
+      start: { bundle: 0, chest: 0, plus: 0, uses: 0, opens: 0, leaving: false, continues: 0 },
       screen,
       rewards,
     });

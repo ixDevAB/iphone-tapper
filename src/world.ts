@@ -3,6 +3,8 @@ import type { Phone } from "./phone.ts";
 import { backArrow, center, has } from "./screen.ts";
 import { sleep } from "./time.ts";
 
+export const neverAttack = /gilded\s*baron|rebel\s*bounty/i;
+
 export const atTown = (lines: TextLine[]) => has(lines, /^Town$/i);
 
 export const onWorld = (lines: TextLine[]) => atTown(lines) || has(lines, /^Conquest$/i);

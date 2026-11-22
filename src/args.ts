@@ -5,6 +5,9 @@ const always = { "--rebuild": "WDA_REBUILD" };
 
 const bare = (flag: string) => flag.replace(/^-+/, "");
 
+export const savedArgs = (env: Env, name: string) =>
+  (env[`${name.toUpperCase().replaceAll("-", "_")}_ARGS`] ?? "").split(/\s+/).filter((arg) => arg);
+
 export const readArgs = (recipe: Recipe, args: string[]) => {
   const flags = recipe.flags ?? {};
   const switches: Env = { ...recipe.switches, ...always };

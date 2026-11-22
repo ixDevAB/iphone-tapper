@@ -6,10 +6,10 @@ import { loadLibrary, matchAt, saveIcon } from "../../src/rewards.ts";
 import { backArrow, center, exact, has, matching, scale } from "../../src/screen.ts";
 import { refill, refillsFrom, staminaDialog, staminaFlags, staminaSwitches } from "../../src/stamina.ts";
 import { clock, sleep } from "../../src/time.ts";
-import { marchesOn, onWorld } from "../../src/world.ts";
+import { marchesOn, neverAttack, onWorld } from "../../src/world.ts";
 
 const searchButton = { x: 25, y: 625 };
-const terrorTab = { x: 137, y: 640 };
+const searchList = { from: { x: 90, y: 640 }, to: { x: 340, y: 640 } };
 const levelMinus = { x: 39, y: 724 };
 const levelPlus = { x: 271, y: 724 };
 const closeHeroes = { x: 359, y: 177 };
@@ -81,6 +81,8 @@ export const terrorHunt: Recipe = {
       waitSince?: number;
       target: string;
       searches: number;
+      scrolls: number;
+      picked: boolean;
       slot: number;
       tabSet: boolean;
       tile: number;
@@ -104,6 +106,8 @@ export const terrorHunt: Recipe = {
       spot: undefined,
       picks: 0,
       searches: 0,
+      scrolls: 0,
+      picked: false,
     });
 
     const screen = async (s: State, { lines, img }: Seen): Next<State> => {
@@ -220,14 +224,36 @@ export const terrorHunt: Recipe = {
       const search = exact(lines, "Search").find((l) => center(l).y > 780);
       if (search) {
         const rally = exact(lines, "Rally")[0];
+        if (rally && has(lines, neverAttack)) {
+          return `the search found the Gilded Baron, which is never attacked, ${s.done} of ${amount} rallies started`;
+        }
         if (rally) {
           const target = matching(lines, /^Lv\.?\s*\d+\s+\S/i)?.text.trim() ?? "terror";
           await press(phone, rally);
           return { ...s, target };
         }
         if (s.searches >= 6) return `no level ${level} terror found, ${s.done} of ${amount} rallies started`;
-        await phone.tap(terrorTab);
-        await sleep(800);
+        const terror = lines.find((l) => /terror/i.test(l.text) && Math.abs(center(l).y - 662) < 20);
+        if (!s.picked && terror) {
+          await phone.tap({ x: center(terror).x, y: center(terror).y - 22 });
+          await sleep(800);
+          return { ...s, picked: true };
+        }
+        if (!terror) {
+          if (s.scrolls >= 3) {
+            return `could not find Terror in the search list, ${s.done} of ${amount} rallies started`;
+          }
+          log("Terror is not in view in the search list, scrolling the list back to its start");
+          await phone.drag(searchList.from, searchList.to, 0.6);
+          await sleep(1200);
+          return { ...s, scrolls: s.scrolls + 1, picked: false };
+        }
+        if (has(lines, /full Resources/i)) {
+          if (s.scrolls >= 3) {
+            return `could not select Terror in the search list, ${s.done} of ${amount} rallies started`;
+          }
+          return { ...s, scrolls: s.scrolls + 1, picked: false };
+        }
         const shown = lines.find((l) =>
           /^\d+$/.test(l.text.trim()) && Math.abs(center(l).y - 725) < 14 && center(l).x > 300
         );
@@ -239,7 +265,7 @@ export const terrorHunt: Recipe = {
         }
         await press(phone, search);
         await sleep(1500);
-        return { ...s, searches: s.searches + 1 };
+        return { ...s, searches: s.searches + 1, picked: false };
       }
 
       if (onWorld(lines)) {
@@ -283,6 +309,8 @@ export const terrorHunt: Recipe = {
         deployed: false,
         target: "terror",
         searches: 0,
+        scrolls: 0,
+        picked: false,
         slot: 0,
         tabSet: false,
         tile: 0,

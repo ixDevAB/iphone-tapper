@@ -3,9 +3,9 @@ import { leaveRewards, look, type Next, runFlow, type Seen } from "../../src/flo
 import { crop, type Image, type Point, scaleUp } from "../../src/image.ts";
 import type { TextLine } from "../../src/ocr.ts";
 import type { Env, Recipe } from "../../src/recipe.ts";
-import { backArrow, center, exact, has, scale } from "../../src/screen.ts";
+import { backArrow, center, exact, has, like, scale } from "../../src/screen.ts";
 import { clock, sleep } from "../../src/time.ts";
-import { panel, row, secondsLeft, toWorld } from "../../src/town.ts";
+import { findRow, panel, secondsLeft, toWorld } from "../../src/town.ts";
 
 export const trials = [
   { name: "Coliseum", setting: "TRIAL_COLISEUM", match: /coliseum/i },
@@ -20,6 +20,8 @@ const kinds = ["Infantry", "Cavalry", "Archer"];
 const done = { x: 361, y: 481 };
 const ratioLine = { x: 20, y: 730, width: 380, height: 35 };
 const mostFights = 60;
+const readAllLabel = like("Read All", true);
+const quickDeployX = 110;
 
 export const ratioFrom = (text: string) => {
   const parts = text.split("/").map((p) => Number(p.trim()));
@@ -49,11 +51,23 @@ export const order = (current: number[], wanted: number[]) =>
 
 const titleOf = (lines: TextLine[]) => lines.find((l) => center(l).y < 95 && center(l).x > 50 && center(l).x < 260);
 
-type State = { finished: string[]; fights: number; balances: number; opens: number; current?: string };
+type State = {
+  finished: string[];
+  reported: string[];
+  readAll: boolean;
+  fights: number;
+  balances: number;
+  opens: number;
+  raids: number;
+  quicks: number;
+  formed: number;
+  closes: number;
+  current?: string;
+};
 
 export const mysticTrial: Recipe = {
   description:
-    "Mystic Trial: in every trial that is open today it sets your troop ratio with Balance and presses Challenge and Deploy until no attempts are left. Starts on the world map or the town map and ends on the world map.",
+    "Mystic Trial: in every trial that is open today it presses Raid and claims the raid rewards when they are offered, then sets your troop ratio with Balance and presses Challenge and Deploy until no attempts are left, and marks the battle reports as read. Starts on the world map or the town map and ends on the world map.",
   run: async (phone, settings) => {
     const time = clock(settings.env.CLOCK);
     const log = (text: string) => console.log(`${time()} ${text}`);
@@ -96,8 +110,12 @@ export const mysticTrial: Recipe = {
           await phone.tap(boxes[i]);
           await sleep(900);
           await phone.type([..."\b".repeat(4), ...String(wanted[i])]);
-          await phone.tap(done);
+          const key = exact((await look(phone)).lines, "Done").find((l) => center(l).x > 300);
+          await phone.tap(key ? center(key) : done);
           await sleep(900);
+          if (exact((await look(phone)).lines, "Done").some((l) => center(l).x > 300)) {
+            throw new Error("the keyboard did not close after typing a troop ratio, stopping");
+          }
         }
         const after = await percents(boxes);
         await decide("set the troop ratio", { trial: s.current, before, wanted, after });
@@ -109,17 +127,45 @@ export const mysticTrial: Recipe = {
         return s;
       }
 
-      const deploy = exact(lines, "Deploy")[0];
+      if (exact(lines, "Squad Config").some((l) => center(l).y < 95)) {
+        const start = exact(lines, "Deploy").find((l) => center(l).y > 700);
+        if (!start) return undefined;
+        const filled = lines.some((l) => /\d[\d,]{3,}\s*\/\s*\d[\d,]{3,}/.test(l.text));
+        if (!filled) {
+          if (s.quicks >= 3) throw new Error("Quick Deploy did not fill the squads, stopping");
+          await decide("pressed Quick Deploy", { trial: s.current });
+          await phone.tap({ x: quickDeployX, y: center(start).y });
+          await sleep(2500);
+          return { ...s, quicks: s.quicks + 1 };
+        }
+        const squads = exact(lines, "Edit Formation").toSorted((a, b) => center(a).y - center(b).y);
+        if (s.formed < squads.length) {
+          await decide("opening a squad to set its troop ratio", { squad: s.formed + 1, of: squads.length });
+          await phone.tap(center(squads[s.formed]));
+          await sleep(2500);
+          return s;
+        }
+        await decide("deploying the squads", { trial: s.current, squads: s.formed });
+        await phone.tap(center(start));
+        await sleep(3000);
+        return { ...s, quicks: 0, formed: 0 };
+      }
+
+      const squad = exact(lines, "Edit Formation").find((l) => center(l).y > 780);
+      const deploy = exact(lines, "Deploy")[0] ?? squad;
       const balance = exact(lines, "Balance")[0];
       if (deploy && balance && has(lines, /^Troop Ratio/i)) {
         const trial = trialIn(titleOf(lines)?.text ?? "") ?? ratios.find((t) => t.name === s.current);
         if (!trial?.ratio) throw new Error("could not tell which trial this is, stopping");
         const shown = percentsIn(await part(img(), ratioLine));
         if (shown.join("/") === trial.ratio.join("/")) {
-          await decide("deploying", { trial: trial.name, ratio: shown });
+          await decide(deploy === squad ? "the squad has its troop ratio" : "deploying", {
+            trial: trial.name,
+            ratio: shown,
+          });
           await phone.tap(center(deploy));
           await sleep(3000);
-          return { ...s, current: trial.name, balances: 0 };
+          return { ...s, current: trial.name, balances: 0, formed: deploy === squad ? s.formed + 1 : s.formed };
         }
         if (s.balances >= 2) {
           throw new Error(`${trial.name} still shows ${shown.join("/")} instead of ${trial.ratio.join("/")}`);
@@ -127,6 +173,69 @@ export const mysticTrial: Recipe = {
         await phone.tap({ x: center(balance).x, y: center(balance).y - 35 });
         await sleep(1500);
         return { ...s, current: trial.name, balances: s.balances + 1 };
+      }
+
+      if (has(lines, /^.?Victory!?$/i) && has(lines, /^Next (Stage|Chapter)/i)) {
+        await sleep(1000);
+        return s;
+      }
+
+      const retry = exact(lines, "Retry")[0];
+      if (retry && has(lines, /^Failed!?$/i)) {
+        const left = Number(
+          lines.map((l) => l.text.match(/Remaining attempts today:\s*(\d+)/i)).find((m) => m)?.[1] ?? 0,
+        );
+        if (left > 0 && s.fights < mostFights) {
+          log(`${s.current ?? "trial"}: lost, ${left} ${left === 1 ? "attempt" : "attempts"} left, trying again`);
+          await decide("pressed Retry after a lost fight", { trial: s.current, left });
+          await phone.tap(center(retry));
+          await sleep(2500);
+          return { ...s, fights: s.fights + 1, formed: 0, quicks: 0, closes: 0 };
+        }
+        const report = exact(lines, "View Battle Report")[0];
+        if (report && s.current && !s.reported.includes(s.current)) {
+          log(`${s.current}: lost, no attempts left`);
+          await phone.tap(center(report));
+          await sleep(2500);
+          return { ...s, reported: [...s.reported, s.current], readAll: false };
+        }
+        if (s.closes >= 3) throw new Error("could not leave the screen of the lost fight, stopping");
+        await phone.tap(backArrow);
+        await sleep(2000);
+        return { ...s, closes: s.closes + 1 };
+      }
+
+      if (exact(lines, "Battle Report").some((l) => center(l).y < 95)) {
+        const readAll = lines.find((l) => readAllLabel.test(l.text) && center(l).y > 780);
+        if (readAll && !s.readAll) {
+          log("battle report: Read All");
+          await decide("pressed Read All in the battle report");
+          await phone.tap(center(readAll));
+          await sleep(2000);
+          return { ...s, readAll: true };
+        }
+        await phone.tap(backArrow);
+        await sleep(2000);
+        return { ...s, readAll: false };
+      }
+
+      const raidClaim = exact(lines, "Claim")[0];
+      if (raidClaim && exact(lines, "Raid Rewards").length && has(lines, /After raiding/i)) {
+        const best = lines.map((l) => l.text.match(/best result is (Stage [\d-]+)/i)).find((m) => m)?.[1];
+        log(`claiming the raid rewards${best ? `, best result ${best.toLowerCase()}` : ""}`);
+        await decide("claimed the raid rewards", { best });
+        await phone.tap(center(raidClaim));
+        await sleep(2500);
+        return s;
+      }
+
+      const raid = lines.find((l) => /^Raid cleared stag/i.test(l.text.trim()) && center(l).y > 700);
+      if (raid && trialIn(titleOf(lines)?.text ?? "")) {
+        if (s.raids >= 3) throw new Error("the Raid button did not open the raid rewards, stopping");
+        await decide("pressed Raid", { trial: titleOf(lines)?.text.trim() });
+        await phone.tap({ x: 201, y: center(raid).y + 31 });
+        await sleep(2500);
+        return { ...s, raids: s.raids + 1 };
       }
 
       const attempts = lines.map((l) => l.text.match(/Remaining attempts today:\s*(\d+)/i)).find((m) => m);
@@ -137,6 +246,12 @@ export const mysticTrial: Recipe = {
         if (!trial) throw new Error("could not tell which trial this is, stopping");
         const stage = lines.find((l) => /^Stage\s/i.test(l.text.trim()))?.text.trim().toLowerCase() ?? "";
         const left = attempts ? Number(attempts[1]) : 0;
+        const report = exact(lines, "Battle Report").find((l) => center(l).y > 300);
+        if ((left <= 0 || s.fights >= mostFights) && report && !s.reported.includes(trial.name)) {
+          await phone.tap({ x: center(report).x, y: center(report).y - 22 });
+          await sleep(2500);
+          return { ...s, reported: [...s.reported, trial.name], readAll: false };
+        }
         if (left <= 0 || s.fights >= mostFights) {
           log(`${trial.name}: no attempts left${stage ? `, at ${stage}` : ""}`);
           await phone.tap(backArrow);
@@ -146,7 +261,7 @@ export const mysticTrial: Recipe = {
         log(`${trial.name}: ${stage || "challenge"}, ${left} ${left === 1 ? "attempt" : "attempts"} left`);
         await phone.tap(center(challenge));
         await sleep(2000);
-        return { ...s, current: trial.name, fights: s.fights + 1 };
+        return { ...s, current: trial.name, fights: s.fights + 1, formed: 0, quicks: 0 };
       }
 
       if (exact(lines, "Mystic Trial").some((l) => center(l).y < 95)) {
@@ -181,7 +296,7 @@ export const mysticTrial: Recipe = {
     };
 
     const list = await panel(phone, "Daily");
-    const entry = ratios.map((trial) => row(list.lines, trial.name)).find((r) => r);
+    const entry = await findRow(phone, list, ratios.map((trial) => trial.name));
     await decide("looked for the mystic trial", { found: Boolean(entry) });
     if (!entry) {
       await toWorld(phone);
@@ -193,7 +308,18 @@ export const mysticTrial: Recipe = {
     await runFlow<State>(phone, {
       name: "trials",
       lostMs: 60000,
-      start: { finished: [], fights: 0, balances: 0, opens: 0 },
+      start: {
+        finished: [],
+        reported: [],
+        readAll: false,
+        fights: 0,
+        balances: 0,
+        opens: 0,
+        raids: 0,
+        quicks: 0,
+        formed: 0,
+        closes: 0,
+      },
       screen,
     }).finally(() => toWorld(phone));
     return later.seconds;

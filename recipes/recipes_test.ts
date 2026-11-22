@@ -5,9 +5,11 @@ import { center, exact, has, like } from "../src/screen.ts";
 import { line, picture } from "../src/testing.ts";
 import { secondsIn } from "../src/time.ts";
 import { colourAt, defaultItems, mayUse, refusal, tierOf, usableTitle } from "./backpack/tiles.ts";
+import { contentDots, isFreeLabel, moreTo, redShapes, tabDots } from "./freebies/dots.ts";
 import { withSetting } from "./heal/calibrate.ts";
 import { alliesFrom, amountIn } from "./heal/window.ts";
-import { findMarkers } from "./intel/markers.ts";
+import { findMarkers, findPins } from "./intel/markers.ts";
+import { gemConfirm, maySpend, priceIn, priceNear } from "./shop/confirm.ts";
 
 Deno.test("reward amounts understand separators and units", () => {
   assertEquals(amountOf("x1,234"), 1234);
@@ -72,8 +74,90 @@ Deno.test("intel markers are found by colour, checks included", () => {
   ]);
   assertEquals(findMarkers(img), [
     { kind: "blue", size: 100, x: 109, y: 309 },
-    { kind: "check", size: 16, x: 303, y: 403 },
+    { kind: "check", size: 64, x: 304, y: 404 },
     { kind: "gold", size: 100, x: 209, y: 509 },
+  ]);
+});
+
+Deno.test("intel pins keep apart when close, join their pieces and know their check", () => {
+  const blue = [20, 90, 153];
+  const purple = [48, 23, 115];
+  const img = picture(1206, 2622, [
+    { at: { x: 150, y: 1100, width: 60, height: 60 }, rgb: purple },
+    { at: { x: 222, y: 1180, width: 60, height: 60 }, rgb: blue },
+    { at: { x: 291, y: 1164, width: 24, height: 24 }, rgb: [80, 190, 57] },
+    { at: { x: 800, y: 1280, width: 60, height: 24 }, rgb: blue },
+    { at: { x: 800, y: 1340, width: 60, height: 24 }, rgb: blue },
+    { at: { x: 600, y: 800, width: 150, height: 150 }, rgb: [255, 170, 20] },
+  ]);
+  assertEquals(findPins(img), [
+    { x: 224, y: 292, colour: "flame", done: false },
+    { x: 59, y: 377, colour: "purple", done: false },
+    { x: 83, y: 403, colour: "blue", done: true },
+    { x: 277, y: 441, colour: "blue", done: false },
+  ]);
+});
+
+Deno.test("the question to spend gems is only answered when every price agrees", () => {
+  const asked = [
+    line("Purchase", 201, 346),
+    line("Confirm to spend 15 gems to purchase this", 200, 414),
+    line("item?", 199, 432),
+    line("Don't show this again today", 214, 494),
+    line("15", 211, 535),
+  ];
+  const confirm = gemConfirm(asked);
+  assertEquals(confirm?.gems, 15);
+  assertEquals(confirm?.button && center(confirm.button), { x: 211, y: 535 });
+  assertEquals(confirm && maySpend(confirm, [15, 15]), true);
+  assertEquals(confirm && maySpend(confirm, [15, 140]), false);
+  assertEquals(confirm && maySpend(confirm, [15, undefined]), false);
+  assertEquals(confirm && maySpend(confirm, [undefined, 15]), false);
+
+  const noButton = gemConfirm(asked.slice(0, 4));
+  assertEquals(noButton && maySpend(noButton, [15, 15]), false);
+  const otherAmount = gemConfirm([
+    ...asked.slice(0, 1),
+    line("Confirm to spend 1,500 gems to purchase this", 200, 414),
+    asked[4],
+  ]);
+  assertEquals(otherAmount?.gems, 1500);
+  assertEquals(otherAmount && maySpend(otherAmount, [15, 15]), false);
+  assertEquals(gemConfirm([line("Buy", 201, 331), line("15", 210, 555)]), undefined);
+});
+
+Deno.test("the price on the buy button is read from the button only", () => {
+  const buy = [line("Buy", 201, 331), line("10", 66, 373), line("10 VIP XP", 139, 375), line("15", 210, 555)];
+  assertEquals(priceNear(buy, { x: 200, y: 553 }), 15);
+  assertEquals(priceNear(buy.slice(0, 3), { x: 200, y: 553 }), undefined);
+  assertEquals(priceIn(["", "19"]), 19);
+  assertEquals(priceIn(["1,900"]), 1900);
+  assertEquals(priceIn(["19 gems", "x"]), undefined);
+});
+
+Deno.test("store red dots are told apart from the exclamation bubble", () => {
+  const red = [230, 30, 30];
+  const img = picture(1206, 2622, [
+    { at: { x: 362, y: 332, width: 26, height: 26 }, rgb: red },
+    { at: { x: 1108, y: 343, width: 58, height: 58 }, rgb: red },
+    { at: { x: 1117, y: 352, width: 40, height: 40 }, rgb: [255, 255, 255] },
+    { at: { x: 1091, y: 572, width: 26, height: 26 }, rgb: red },
+    { at: { x: 300, y: 1200, width: 120, height: 40 }, rgb: red },
+  ]);
+  const shapes = redShapes(img);
+  assertEquals(tabDots(shapes), [125]);
+  assertEquals(contentDots(shapes), [{ x: 368, y: 195 }]);
+  assertEquals(moreTo(shapes, "right"), true);
+  assertEquals(moreTo(shapes, "left"), false);
+});
+
+Deno.test("free labels are recognised with a misread accent, longer texts are not", () => {
+  assertEquals(["Frée", "Free", "Claimable", " claim "].map(isFreeLabel), [true, true, true, true]);
+  assertEquals(["Claimable Daily:", "Claimed", "Free Refresh", "Buy All"].map(isFreeLabel), [
+    false,
+    false,
+    false,
+    false,
   ]);
 });
 

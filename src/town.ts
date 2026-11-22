@@ -11,6 +11,7 @@ const panelHandle = { x: 8, y: 401 };
 const tabs = { Town: 44, Wilderness: 126, Daily: 205 };
 const tabY = 245;
 const buttonX = 226;
+const rowFullyShown = 520;
 
 const inBar = (lines: TextLine[], text: string) => exact(lines, text).some((l) => center(l).y > 820);
 
@@ -65,6 +66,26 @@ export const row = (lines: TextLine[], title: string) => {
     center(l).y - center(name).y > 8 && center(l).y - center(name).y < 28
   );
   return { status: status?.text.trim() ?? "", button: { x: buttonX, y: center(name).y + 9 } };
+};
+
+export const findRow = async (phone: Phone, first: Seen, titles: string[], scrolls = 16) => {
+  const here = (seen: Seen) => titles.map((title) => row(seen.lines, title)).find((found) => found);
+  const further = async (seen: Seen, left: number, lastY?: number): Promise<ReturnType<typeof row>> => {
+    const found = here(seen);
+    const stuck = found !== undefined && lastY !== undefined && Math.abs(found.button.y - lastY) < 3;
+    if (left <= 0 || (found && (found.button.y <= rowFullyShown || stuck))) return found;
+    await phone.drag({ x: 120, y: 480 }, { x: 120, y: 435 }, 1.5);
+    await sleep(1000);
+    return further(await look(phone), left - 1, found?.button.y);
+  };
+  const direct = here(first);
+  if (direct) return direct;
+  await decide("scrolling the list at the side of the town map", { for: titles });
+  for (const _ of [1, 2, 3]) {
+    await phone.drag({ x: 120, y: 330 }, { x: 120, y: 520 }, 0.6);
+    await sleep(700);
+  }
+  return further(await look(phone), scrolls);
 };
 
 export const tapUntil = async (

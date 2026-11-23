@@ -598,7 +598,7 @@ Once the Mac has reached the phone over the cable, it also reaches it without on
 
 ### After restarting the phone
 
-A restarted phone refuses every connection until it has been set up again:
+A restarted phone refuses every connection until it has been set up again. Being on the same Wi-Fi as the Mac is not enough: it has to be on the cable once before the Mac can reach it without one.
 
 1. Unlock it with the **passcode** (Face ID is not enough the first time).
 2. Plug in the cable. Tap **Trust** if the phone asks.

@@ -60,9 +60,14 @@ export const claimFreebies: Recipe = {
       const priced = (spot: Spot) => prices.some((p) => Math.abs(p.y - spot.y) < 45 && Math.abs(p.x - spot.x) < 110);
       const byLabel = labels
         .filter((l) => isFreeLabel(l.text) && !priced(l))
-        .map((l) => ({ why: `the label "${l.text}"`, at: { x: l.x, y: l.y }, tap: { x: l.x, y: l.y - 20 } }));
+        .map((l) => ({
+          why: `the label "${l.text}"`,
+          at: { x: l.x, y: l.y },
+          tap: { x: l.x, y: l.y - 20 },
+          onLabel: true,
+        }));
       const byDot = contentDots(redShapes(img()))
-        .map((dot) => ({ why: "a red dot", at: dot, tap: { x: dot.x - 14, y: dot.y + 12 } }))
+        .map((dot) => ({ why: "a red dot", at: dot, tap: { x: dot.x - 14, y: dot.y + 12 }, onLabel: false }))
         .filter((t) =>
           !priced(t.tap) && !byLabel.some((l) => Math.abs(l.tap.x - t.tap.x) < 40 && Math.abs(l.tap.y - t.tap.y) < 40)
         );
@@ -78,22 +83,26 @@ export const claimFreebies: Recipe = {
     ): Promise<number> => {
       if (await dismiss()) return claimOnTab(claimed, tries, scrolls, lastSeen, tried);
       const { targets, seen } = await targetsOn();
-      const target = targets.find((t) => !tried.some((spot) => close(spot, t.at)));
+      const moved = lastSeen !== "" && seen !== lastSeen;
+      const before = moved ? [] : tried;
+      const times = (at: Spot) => before.filter((spot) => close(spot, at)).length;
+      const target = targets.find((t) => times(t.at) < (t.onLabel ? 2 : 1));
       if (!target || tries <= 0) {
         if (scrolls >= maxScrolls || seen === lastSeen) return claimed;
         await phone.drag({ x: 12, y: 700 }, { x: 12, y: 300 }, 0.8);
         await sleep(1500);
-        return claimOnTab(claimed, tries, scrolls + 1, seen, []);
+        return claimOnTab(claimed, tries, scrolls + 1, seen, before);
       }
-      log(`claiming at ${target.why}`);
-      await decide("tapped something free", { why: target.why, x: target.tap.x, y: target.tap.y });
-      await phone.tap(target.tap);
+      const spot = times(target.at) === 0 ? target.tap : target.at;
+      log(`claiming at ${target.why}${spot === target.at ? ", this time on the label itself" : ""}`);
+      await decide("tapped something free", { why: target.why, x: spot.x, y: spot.y });
+      await phone.tap(spot);
       await sleep(2000);
       const popup = await dismiss();
       const after = await targetsOn();
       const gone = !after.targets.some((t) => close(t.at, target.at));
       await decide(gone || popup ? "it was claimed" : "it is still there", { why: target.why });
-      return claimOnTab(claimed + (gone || popup ? 1 : 0), tries - 1, scrolls, "", [...tried, target.at]);
+      return claimOnTab(claimed + (gone || popup ? 1 : 0), tries - 1, scrolls, "", [...before, target.at]);
     };
 
     const pages = async (page: number, total: number, lastBar: string): Promise<number> => {

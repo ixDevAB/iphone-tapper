@@ -44,7 +44,7 @@ const isBubble = (s: Shape) =>
   within(s.width, [50, 70]) && within(s.height, [50, 70]) && s.fill < 0.66 && within(s.y, bubbleBand);
 
 export const tabDots = (shapes: Shape[]) =>
-  shapes.filter((s) => isDot(s) && within(s.y, tabBand)).map((s) => s.x).toSorted((a, b) => a - b);
+  shapes.filter((s) => isDot(s) && within(s.y, tabBand) && s.x >= 40).map((s) => s.x).toSorted((a, b) => a - b);
 
 export const contentDots = (shapes: Shape[]) =>
   shapes.filter((s) => isDot(s) && within(s.y, content)).map((s) => ({ x: s.x, y: s.y }));

@@ -50,8 +50,11 @@ const hideTicked = (img: Image) =>
 const labelled = (lines: TextLine[], name: RegExp) => lines.find((l) => name.test(l.text) && center(l).y > 110);
 
 const waterOn = (lines: TextLine[]) => {
-  const shown = lines.find((l) => /^[\d,]+$/.test(l.text.trim()) && center(l).y < 95 && center(l).x > 280);
-  return shown ? Number(shown.text.replace(/\D/g, "")) : undefined;
+  const shown = lines
+    .filter((l) => center(l).y < 95 && center(l).x > 280)
+    .map((l) => l.text.trim().match(/^(\d[\d,]{2,})(?!\d)/)?.[1])
+    .find((text) => text);
+  return shown ? Number(shown.replace(/\D/g, "")) : undefined;
 };
 
 const picked = (lines: TextLine[]) => {
@@ -199,10 +202,16 @@ export const collectWater: Recipe = {
       ? undefined
       : chosen.lines.find((l) => center(l).y > 95 && center(l).y < 300 && /[a-z]{4}/i.test(l.text));
     if (selected) await press("Fountain of Life");
-    if (!selected) {
-      log(`the fountain was not in the middle of the island view${other ? ` (${other.text.trim()} is)` : ""}`);
-    }
     const afterFountain = waterOn((await look(phone)).lines);
+    const fromTap = before !== undefined && afterFountain !== undefined ? afterFountain - before : 0;
+    if (fromTap > 0) log(`fountain: ${fromTap.toLocaleString("en-US")} water collected`);
+    if (!selected && fromTap <= 0) {
+      log(
+        `fountain: the tap collected nothing and did not select it${
+          other ? ` (${other.text.trim()} was selected)` : ""
+        }`,
+      );
+    }
     await decide("collected at the fountain", { before, after: afterFountain, selected: Boolean(selected) });
 
     const purifier = async (): Promise<string> => {

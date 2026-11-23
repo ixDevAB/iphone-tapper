@@ -11,8 +11,11 @@ struct Line: Codable {
 
 var accurateWorks = ProcessInfo.processInfo.environment["OCR_ACCURATE"] != "0"
 
-func recognize(_ image: CGImage, _ level: VNRequestTextRecognitionLevel) throws -> [VNRecognizedTextObservation] {
+func recognize(
+  _ image: CGImage, _ level: VNRequestTextRecognitionLevel, _ revision: Int? = nil
+) throws -> [VNRecognizedTextObservation] {
   let request = VNRecognizeTextRequest()
+  if let revision { request.revision = revision }
   request.recognitionLevel = level
   request.usesLanguageCorrection = false
   request.usesCPUOnly = true
@@ -20,8 +23,18 @@ func recognize(_ image: CGImage, _ level: VNRequestTextRecognitionLevel) throws 
   return request.results ?? []
 }
 
+func upsideDown(_ results: [VNRecognizedTextObservation]) -> Bool {
+  results.filter { $0.topLeft.y < $0.bottomLeft.y }.count * 2 > results.count
+}
+
 func read(_ image: CGImage) -> [VNRecognizedTextObservation] {
   if accurateWorks, let results = try? recognize(image, .accurate) {
+    if upsideDown(results),
+      let again = try? recognize(image, .accurate, VNRecognizeTextRequestRevision2),
+      !upsideDown(again)
+    {
+      return again
+    }
     return results
   }
   if accurateWorks {

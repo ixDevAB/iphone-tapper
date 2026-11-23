@@ -592,6 +592,26 @@ Developer Mode lets your Mac install the helper app on the phone. You only turn 
 
 **Tip:** set Settings > Display & Brightness > Auto-Lock to **Never** while it runs. When the phone locks, it stops accepting taps.
 
+### Without the cable
+
+Once the Mac has reached the phone over the cable, it also reaches it without one, as long as both are on the same network and the phone is unlocked. Starting takes longer that way, so use the cable when a task is slow to start.
+
+### After restarting the phone
+
+A restarted phone refuses every connection until it has been set up again:
+
+1. Unlock it with the **passcode** (Face ID is not enough the first time).
+2. Plug in the cable. Tap **Trust** if the phone asks.
+3. Check what the Mac sees:
+   ```sh
+   xcrun devicectl list devices
+   ```
+   The phone should say `available (paired)`. If it says `unavailable`, the cable is not carrying data: plug it in again or use another port. If it is there but not paired, pair it again with the identifier from that list:
+   ```sh
+   xcrun devicectl manage pair --device IDENTIFIER-FROM-THE-LIST
+   ```
+4. Start the task. After that the cable can come off again.
+
 ## Free or paid Apple account
 
 |                           | Free Apple ID                   | Paid Apple Developer ($99/year) |
@@ -669,7 +689,7 @@ The recipes are made on an iPhone 17 Pro. On other models the buttons sit elsewh
 | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `command not found: deno`                                                                                 | Run `nix develop` first.                                                                                                                                      |
 | `no iphone found`                                                                                         | Plug in the cable, unlock the phone, try again.                                                                                                               |
-| `is not reachable`                                                                                        | Unlock the phone and keep it unlocked while starting.                                                                                                         |
+| `is not reachable`                                                                                        | Unlock the phone and keep it unlocked while starting. If the phone was restarted, see [After restarting the phone](#after-restarting-the-phone).              |
 | `no apple development certificate found`                                                                  | Do step 3 of the first time setup.                                                                                                                            |
 | `several developer teams found`                                                                           | Create the settings file and copy one of the `TEAM_ID=` lines it shows into it.                                                                               |
 | `the phone stopped accepting taps`                                                                        | The phone locked. Unlock it, set Auto-Lock to Never and start again.                                                                                          |

@@ -55,3 +55,28 @@ export const moreTo = (shapes: Shape[], side: "left" | "right") =>
 export const plain = (text: string) => text.normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLowerCase();
 
 export const isFreeLabel = (text: string) => /^(free|claimable|claim)$/.test(plain(text));
+
+type Label = { text: string; x: number; y: number };
+
+export const trackSteps = (labels: Label[]) => {
+  const numbers = labels
+    .flatMap((l) => /^\d{1,3}$/.test(l.text.trim()) ? [{ n: Number(l.text), x: l.x, y: l.y }] : [])
+    .toSorted((a, b) => a.x - b.x);
+  const rows = numbers
+    .map((first) => numbers.filter((other) => Math.abs(other.y - first.y) <= 8))
+    .map((row) =>
+      row.slice(row.findIndex((_, i) => row.slice(i).every((s, k, rest) => k === 0 || s.n > rest[k - 1].n)))
+    )
+    .filter((row) => row.length >= 3 && row.every((s, k) => k === 0 || s.x - row[k - 1].x >= 40));
+  const row = rows.toSorted((a, b) => b.length - a.length)[0];
+  if (!row) return [];
+  const first = row[0];
+  const last = row[row.length - 1];
+  const gap = Math.min(...row.slice(1).map((s, k) => s.x - row[k].x));
+  const count = Math.round((last.x - first.x) / gap);
+  return Array.from({ length: count + 1 }, (_, k) => ({
+    step: k + 1,
+    x: Math.round(first.x + k * (last.x - first.x) / count),
+    y: first.y,
+  }));
+};

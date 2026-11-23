@@ -5,7 +5,7 @@ import { center, exact, has, like } from "../src/screen.ts";
 import { line, picture } from "../src/testing.ts";
 import { secondsIn } from "../src/time.ts";
 import { colourAt, defaultItems, mayUse, refusal, tierOf, usableTitle } from "./backpack/tiles.ts";
-import { contentDots, isFreeLabel, moreTo, redShapes, tabDots } from "./freebies/dots.ts";
+import { contentDots, isFreeLabel, moreTo, redShapes, tabDots, trackSteps } from "./freebies/dots.ts";
 import { withSetting } from "./heal/calibrate.ts";
 import { alliesFrom, amountIn } from "./heal/window.ts";
 import { findMarkers, findPins } from "./intel/markers.ts";
@@ -149,6 +149,17 @@ Deno.test("store red dots are told apart from the exclamation bubble", () => {
   assertEquals(contentDots(shapes), [{ x: 368, y: 195 }]);
   assertEquals(moreTo(shapes, "right"), true);
   assertEquals(moreTo(shapes, "left"), false);
+});
+
+Deno.test("a reward track is found from the step numbers the reader caught, the missed steps included", () => {
+  const at = (text: string, x: number, y = 333) => ({ text, x, y });
+  const read = [at("200", 96, 302), at("·60", 160, 302), at("5", 305, 302), at("1", 88), at("9", 292), at("12", 365)];
+  assertEquals(trackSteps(read).map((s) => s.x), [88, 157, 227, 296, 365]);
+  assertEquals(trackSteps(read)[0], { step: 1, x: 88, y: 333 });
+  assertEquals(trackSteps([at("1", 88), at("3", 150), at("6", 219), at("9", 291), at("12", 363)]).length, 5);
+  assertEquals(trackSteps([at("9", 292), at("12", 365)]), []);
+  assertEquals(trackSteps([at("10", 67, 579), at("200", 107, 575), at("25", 160, 579)]), []);
+  assertEquals(trackSteps([at("100", 54, 699), at("100", 148, 699), at("100", 240, 699)]), []);
 });
 
 Deno.test("free labels are recognised with a misread accent, longer texts are not", () => {

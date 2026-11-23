@@ -7,7 +7,7 @@ import { rewardCounter } from "../../src/rewards.ts";
 import { backArrow, center, points, scale } from "../../src/screen.ts";
 import { clock, sleep } from "../../src/time.ts";
 import { atTown } from "../../src/world.ts";
-import { contentDots, isFreeLabel, redShapes, tabDots } from "./dots.ts";
+import { contentDots, isFreeLabel, redShapes, tabDots, trackSteps } from "./dots.ts";
 
 const cartButton = { x: 343, y: 68 };
 const exitSpot = { x: 200, y: 798 };
@@ -65,13 +65,24 @@ export const claimFreebies: Recipe = {
           at: { x: l.x, y: l.y },
           tap: { x: l.x, y: l.y - 20 },
           onLabel: true,
+          step: 0,
         }));
       const byDot = contentDots(redShapes(img()))
-        .map((dot) => ({ why: "a red dot", at: dot, tap: { x: dot.x - 14, y: dot.y + 12 }, onLabel: false }))
+        .map((dot) => ({ why: "a red dot", at: dot, tap: { x: dot.x - 14, y: dot.y + 12 }, onLabel: false, step: 0 }))
         .filter((t) =>
           !priced(t.tap) && !byLabel.some((l) => Math.abs(l.tap.x - t.tap.x) < 40 && Math.abs(l.tap.y - t.tap.y) < 40)
         );
-      return { targets: [...byLabel, ...byDot], seen: labels.map((l) => l.text.replace(/\d/g, "")).join("|") };
+      const byTrack = trackSteps(labels).map((step) => ({
+        why: `step ${step.step} of a reward track`,
+        at: { x: step.x, y: step.y },
+        tap: { x: step.x, y: step.y - 45 },
+        onLabel: false,
+        step: step.step,
+      }));
+      return {
+        targets: [...byLabel, ...byDot, ...byTrack],
+        seen: labels.map((l) => l.text.replace(/\d/g, "")).join("|"),
+      };
     };
 
     const claimOnTab = async (
@@ -80,18 +91,19 @@ export const claimFreebies: Recipe = {
       scrolls: number,
       lastSeen: string,
       tried: Spot[],
+      steps: number[],
     ): Promise<number> => {
-      if (await dismiss()) return claimOnTab(claimed, tries, scrolls, lastSeen, tried);
+      if (await dismiss()) return claimOnTab(claimed, tries, scrolls, lastSeen, tried, steps);
       const { targets, seen } = await targetsOn();
       const moved = lastSeen !== "" && seen !== lastSeen;
       const before = moved ? [] : tried;
       const times = (at: Spot) => before.filter((spot) => close(spot, at)).length;
-      const target = targets.find((t) => times(t.at) < (t.onLabel ? 2 : 1));
+      const target = targets.find((t) => t.step ? !steps.includes(t.step) : times(t.at) < (t.onLabel ? 2 : 1));
       if (!target || tries <= 0) {
         if (scrolls >= maxScrolls || seen === lastSeen) return claimed;
         await phone.drag({ x: 12, y: 700 }, { x: 12, y: 300 }, 0.8);
         await sleep(1500);
-        return claimOnTab(claimed, tries, scrolls + 1, seen, before);
+        return claimOnTab(claimed, tries, scrolls + 1, seen, before, steps);
       }
       const spot = times(target.at) === 0 ? target.tap : target.at;
       log(`claiming at ${target.why}${spot === target.at ? ", this time on the label itself" : ""}`);
@@ -101,8 +113,18 @@ export const claimFreebies: Recipe = {
       const popup = await dismiss();
       const after = await targetsOn();
       const gone = !after.targets.some((t) => close(t.at, target.at));
-      await decide(gone || popup ? "it was claimed" : "it is still there", { why: target.why });
-      return claimOnTab(claimed + (gone || popup ? 1 : 0), tries - 1, scrolls, "", [...before, target.at]);
+      const got = target.step ? popup : gone || popup;
+      await decide(got ? "it was claimed" : target.step ? "nothing to claim there" : "it is still there", {
+        why: target.why,
+      });
+      return claimOnTab(
+        claimed + (got ? 1 : 0),
+        target.step ? tries : tries - 1,
+        scrolls,
+        "",
+        target.step ? before : [...before, target.at],
+        target.step ? [...steps, target.step] : steps,
+      );
     };
 
     const pages = async (page: number, total: number, lastBar: string): Promise<number> => {
@@ -115,7 +137,7 @@ export const claimFreebies: Recipe = {
         await decide("opening a store tab with a red dot", { x: dot });
         await phone.tap({ x: Math.max(30, dot - 20), y: tabY });
         await sleep(2000);
-        return visit([...done, dot], sum + await claimOnTab(0, 6, 0, "", []));
+        return visit([...done, dot], sum + await claimOnTab(0, 6, 0, "", [], []));
       };
       const claimed = await visit([], 0);
       await phone.drag({ x: 330, y: 138 }, { x: 90, y: 138 }, 0.6);

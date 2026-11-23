@@ -245,7 +245,7 @@ just claim-freebies
 
 Start it on the world map. It opens the store (the shopping cart), opens every tab that has a red dot, and scrolls down through it looking for things marked **Free**, **Claimable** or **Claim**. It claims those. It never presses a button with a price on it, and it skips a label that sits next to a price.
 
-The store looks different every day, so it goes by what it sees: a small red dot on a tab means something in that tab can be claimed, and inside the tab it taps what is labelled **Free**, **Claimable** or **Claim**, or what has a red dot of its own. The red circle with an exclamation mark at the edge of the tab row only says that a tab with a dot is further along; it pages through all the tabs anyway.
+The store looks different every day, so it goes by what it sees: a small red dot on a tab means something in that tab can be claimed, and inside the tab it taps what is labelled **Free**, **Claimable** or **Claim**, or what has a red dot of its own. Where a tab has a reward track (a row of rewards over the numbers 1, 3, 6 and so on), it taps every step once; a step that is not reached yet only shows what it holds. The red circle with an exclamation mark at the edge of the tab row only says that a tab with a dot is further along; it pages through all the tabs anyway.
 
 ### VIP claims
 

@@ -119,6 +119,10 @@ export const sequence = (description: string, chosen: Step[]): Recipe => {
     switches: { ...options.switches, ...againSwitch },
     run: async (phone, settings) => {
       const time = clock(settings.env.CLOCK);
+      if (!(await goHome(phone, 8))) {
+        console.log(`${time()} could not get to the world map, stopping`);
+        return;
+      }
       for (const step of chosen) {
         const until = doneToday(settings, step);
         if (until) {
@@ -129,7 +133,7 @@ export const sequence = (description: string, chosen: Step[]): Recipe => {
         }
         console.log(`\n${time()} == ${step.name} ==`);
         await runStep(phone, settings, step);
-        if (!(await goHome(phone, 5))) {
+        if (!(await goHome(phone, 8))) {
           console.log(`${time()} could not get back to the world map after ${step.name}, stopping`);
           return;
         }

@@ -5,6 +5,7 @@ import type { Phone } from "./phone.ts";
 import type { Rewards } from "./rewards.ts";
 import { center, exact, matching, saveShot, screenWidth } from "./screen.ts";
 import { sleep } from "./time.ts";
+import { mapButton, onTownMap } from "./world.ts";
 
 export type Seen = { png: Uint8Array; lines: TextLine[]; img: () => Image };
 
@@ -75,6 +76,12 @@ export const runFlow = async <S extends object>(phone: Phone, flow: Flow<S>) => 
     if (next !== undefined) {
       await decide("knew the screen", { changed: changes(s, next) });
       return step(next, Date.now());
+    }
+    if (onTownMap(seen.lines)) {
+      await decide("on the town map, going to the world map");
+      await phone.tap(mapButton);
+      await sleep(3000);
+      return step(s, Date.now());
     }
     await decide("did not know the screen, waiting");
     if (Date.now() - knownAt > flow.lostMs) {

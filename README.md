@@ -340,7 +340,7 @@ It only deploys when the Troop Ratio line on the screen shows exactly your numbe
 just morning --pan --gourmet --embrace
 ```
 
-Start it on the world map. It runs sixteen tasks one after the other and returns to the world map between them:
+Start it on the world map or the town map; it goes to the world map by itself first, and closes a window that is still open. It runs sixteen tasks one after the other and returns to the world map between them:
 
 1. the intel missions (`--pan`, `--gourmet`, `--embrace` and `--stamina 50` work as for the intel task; `--gourmet` is the same as `--storehouse`)
 2. two Terror rallies with Diana as archer and Fahd as cavalry (change with a number, `--arch`, `--cav`, `--inf` and `--level`)

@@ -6,6 +6,6 @@ export const morning = sequence(
 );
 
 export const evening = sequence(
-  "The evening round: the morning round without the Terror rallies, the store freebies and the VIP claims. The Mystic Trials are left out when they were already played today.",
+  "The evening round. It skips what is only done once a day (the Terror rallies, the store freebies and the VIP claims) and runs everything else from the morning round. The Mystic Trials are skipped too when they were already played today.",
   steps.filter((step) => !onlyInTheMorning.includes(step.name)),
 );

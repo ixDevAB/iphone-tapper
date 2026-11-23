@@ -33,7 +33,7 @@ export const run: Recipe = {
       }
       console.log(`\n${time()} == ${next.name} ==`);
       const again = await runStep(phone, settings, next) ?? Date.now();
-      const home = await goHome(phone, 5);
+      const home = await goHome(phone, 8);
       if (!home) console.log(`${time()} not on the world map after ${next.name}, trying everything again in 5 minutes`);
       console.log(`${time()} ${next.name} runs again at ${at(again)}`);
       if (!home) await sleep(5 * minute * 1000);
@@ -44,6 +44,7 @@ export const run: Recipe = {
       const nextAt = settings.runs.last(t.name)?.nextAt;
       return nextAt ? [[t.name, nextAt]] : [];
     }));
+    if (!(await goHome(phone, 8))) throw new Error("could not get to the world map");
     await round(remembered);
   },
 };

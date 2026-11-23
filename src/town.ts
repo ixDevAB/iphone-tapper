@@ -5,8 +5,10 @@ import type { TextLine } from "./ocr.ts";
 import type { Phone } from "./phone.ts";
 import { backArrow, center, exact } from "./screen.ts";
 import { sleep } from "./time.ts";
+import { mapButton, onTownMap, onWorldMap } from "./world.ts";
 
-const mapButton = { x: 361, y: 825 };
+export { onTownMap, onWorldMap };
+
 const panelHandle = { x: 8, y: 401 };
 const tabs = { Town: 44, Wilderness: 126, Daily: 205 };
 const tabY = 245;
@@ -14,10 +16,6 @@ const buttonX = 226;
 const rowFullyShown = 520;
 
 const inBar = (lines: TextLine[], text: string) => exact(lines, text).some((l) => center(l).y > 820);
-
-export const onTownMap = (lines: TextLine[]) => inBar(lines, "World");
-
-export const onWorldMap = (lines: TextLine[]) => inBar(lines, "Town") && !exact(lines, "My Island").length;
 
 const panelOpen = (lines: TextLine[]) => exact(lines, "Wilderness").some((l) => Math.abs(center(l).y - tabY) < 15);
 

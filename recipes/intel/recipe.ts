@@ -8,6 +8,7 @@ import { refill, refillsFrom, staminaDialog, staminaFlags, staminaSwitches } fro
 import { clock, sleep } from "../../src/time.ts";
 import { marchesOn, neverAttack, onWorld } from "../../src/world.ts";
 import { findPins } from "./markers.ts";
+import { intelSummary } from "./summary.ts";
 
 const intelButton = { x: 369, y: 619 };
 const panButton = { x: 32, y: 170 };
@@ -21,6 +22,7 @@ const actions = [
 ];
 
 const claimAll = like("Claim All", true);
+const sentForMs = 180000;
 
 const staminaOn = (lines: TextLine[]) => {
   const line = lines.find((l) => /^\d+$/.test(l.text.trim()) && center(l).y < 100 && center(l).x > 300);
@@ -44,7 +46,7 @@ export const intel: Recipe = {
 
     type Spot = Point & { colour: string };
     const same = (a: Spot, b: Spot) => a.colour === b.colour && Math.hypot(a.x - b.x, a.y - b.y) < 20;
-    const finishedIntel: string[] = [];
+    const finishedIntel: { colour: string; kind: string }[] = [];
     const rewards = rewardCounter(phone);
 
     type State = {
@@ -56,7 +58,7 @@ export const intel: Recipe = {
       leaving: boolean;
       tapped?: Spot;
       current?: Spot;
-      sent: Spot[];
+      sent: (Spot & { at: number })[];
       collectSince?: number;
       fullSince?: number;
       empty?: string;
@@ -166,8 +168,10 @@ export const intel: Recipe = {
       }
 
       if (has(lines, /Intel Mission\s*$/i)) {
-        const marching = s.kind && s.kind !== "fight" && s.current ? [...s.sent, s.current] : s.sent;
-        if (s.kind) finishedIntel.push(`${s.current?.colour ?? "unknown"} ${s.kind}`);
+        const marching = s.kind && s.kind !== "fight" && s.current
+          ? [...s.sent, { ...s.current, at: Date.now() }]
+          : s.sent;
+        if (s.kind) finishedIntel.push({ colour: s.current?.colour ?? "unknown", kind: s.kind });
         const finished = s.kind
           ? { ...s, done: s.done + 1, kind: undefined, current: undefined, deploys: 0, sent: marching, leaving: false }
           : { ...s, leaving: false };
@@ -193,23 +197,29 @@ export const intel: Recipe = {
         if (stamina !== undefined && stamina !== s.stamina) console.log(`${time()} stamina ${stamina}`);
         const duds = s.tapped ? [...s.duds, s.tapped] : s.duds;
         const pins = findPins(screen);
+        const live = finished.sent.filter((d) =>
+          Date.now() - d.at < sentForMs &&
+          !pins.some((p) => p.done && p.colour === d.colour && Math.hypot(p.x - d.x, p.y - d.y) < 30)
+        );
+        const now = { ...finished, sent: live };
         const open = pins.filter((p) => !p.done);
         const bounty = open.filter((p) => p.colour === "flame");
-        const away = open.filter((p) => finished.sent.some((d) => same(d, p)));
+        const away = live;
+        const dimmed = open.filter((p) => live.some((d) => same(d, p)));
         const strong = open.filter((p) => s.weak.some((d) => same(d, p)));
-        const stuck = open.filter((p) => !away.includes(p) && duds.some((d) => same(d, p)));
-        const todo = open.filter((p) => ![...bounty, ...away, ...strong, ...stuck].includes(p));
+        const stuck = open.filter((p) => !dimmed.includes(p) && duds.some((d) => same(d, p)));
+        const todo = open.filter((p) => ![...bounty, ...dimmed, ...strong, ...stuck].includes(p));
         const marker = s.empty ? undefined : todo[0];
         if (marker && stamina !== undefined && stamina < needed) {
           await phone.tap(staminaPlus);
           await sleep(1500);
-          return { ...finished, stamina, tapped: undefined, duds };
+          return { ...now, stamina, tapped: undefined, duds };
         }
         if (marker) {
           await phone.tap(marker);
           await sleep(1500);
           return {
-            ...finished,
+            ...now,
             stamina,
             duds,
             tapped: { x: marker.x, y: marker.y, colour: marker.colour },
@@ -222,7 +232,7 @@ export const intel: Recipe = {
         if (claim && !waiting) {
           console.log(`${time()} collecting rewards`);
           await press(phone, claim);
-          return { ...finished, stamina, duds, tapped: undefined, collectSince: since };
+          return { ...now, stamina, duds, tapped: undefined, collectSince: since };
         }
         if (waiting) {
           if (!s.collectSince) {
@@ -233,7 +243,7 @@ export const intel: Recipe = {
             );
           }
           await sleep(3000);
-          return { ...finished, stamina, duds, tapped: undefined, collectSince: since };
+          return { ...now, stamina, duds, tapped: undefined, collectSince: since };
         }
         await saveShot("intel-end.png", png);
         console.log(
@@ -265,10 +275,8 @@ export const intel: Recipe = {
       start: { done: 0, meatUsed: 0, panTried: false, duds: [], weak: [], leaving: false, sent: [], deploys: 0 },
       screen,
     }).finally(() => {
-      const counts = Object.entries(Object.groupBy(finishedIntel, (name) => name)).map(([name, all]) =>
-        `${all?.length ?? 0} ${name}`
-      );
-      if (counts.length) console.log(`intel done: ${counts.join(", ")}`);
+      const summary = intelSummary(finishedIntel);
+      if (summary.length) console.log(summary.join("\n"));
       rewards.print();
     });
   },

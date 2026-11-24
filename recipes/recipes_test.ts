@@ -9,6 +9,7 @@ import { contentDots, isFreeLabel, moreTo, redShapes, tabDots, trackSteps } from
 import { withSetting } from "./heal/calibrate.ts";
 import { alliesFrom, amountIn } from "./heal/window.ts";
 import { findMarkers, findPins } from "./intel/markers.ts";
+import { intelSummary } from "./intel/summary.ts";
 import { gemConfirm, maySpend, priceIn, priceNear } from "./shop/confirm.ts";
 
 Deno.test("reward amounts understand separators and units", () => {
@@ -170,6 +171,21 @@ Deno.test("free labels are recognised with a misread accent, longer texts are no
     false,
     false,
   ]);
+});
+
+Deno.test("the intel summary gives the totals per kind and the colours under them", () => {
+  const done = [
+    ...["blue", "blue", "purple", "gold", "purple", "blue"].map((colour) => ({ colour, kind: "animal" })),
+    { colour: "purple", kind: "tent" },
+    ...["gold", "blue", "gold"].map((colour) => ({ colour, kind: "fight" })),
+  ];
+  assertEquals(intelSummary(done), [
+    "intel done: 10 (6 animals, 1 tent, 3 fights)",
+    "  animals: 3 blue, 2 purple, 1 gold",
+    "  tents: 1 purple",
+    "  fights: 2 gold, 1 blue",
+  ]);
+  assertEquals(intelSummary([]), []);
 });
 
 Deno.test("a colour needs two of the three samples to agree", () => {

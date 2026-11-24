@@ -1,6 +1,6 @@
 {
   "tasks": {
-    "start": "deno run --allow-read --allow-write --allow-net --allow-env=OCR_ACCURATE,OCR_ACCURATE_SECONDS --allow-run=xcrun,xcodebuild,swiftc,git,security,openssl,build/ocr src/start.ts",
+    "start": "deno run --allow-read --allow-write --allow-net --allow-env=OCR_ACCURATE,OCR_ACCURATE_SECONDS --allow-run=xcrun,xcodebuild,swiftc,git,security,openssl,pkill,build/ocr src/start.ts",
     "test": "deno test --allow-read",
     "check": "deno check src/start.ts && deno lint",
     "runs": "deno run --allow-read --allow-write src/history.ts",

@@ -51,6 +51,23 @@ export const connectPhone = async (base: string) => {
       duration: seconds,
     });
 
+  const slide = (from: { x: number; y: number }, to: { x: number; y: number }, seconds = 0.8) =>
+    post(`/session/${sessionId}/actions`, {
+      actions: [{
+        type: "pointer",
+        id: "finger",
+        parameters: { pointerType: "touch" },
+        actions: [
+          { type: "pointerMove", duration: 0, x: from.x, y: from.y },
+          { type: "pointerDown", button: 0 },
+          { type: "pause", duration: 150 },
+          { type: "pointerMove", duration: Math.round(seconds * 1000), x: to.x, y: to.y },
+          { type: "pause", duration: 400 },
+          { type: "pointerUp", button: 0 },
+        ],
+      }],
+    });
+
   const type = async (keys: string[]) => {
     for (const key of keys) {
       await post(`/session/${sessionId}/wda/keys`, { value: [key] });
@@ -58,7 +75,7 @@ export const connectPhone = async (base: string) => {
     }
   };
 
-  return { screenshot, snap, tap, drag, type, ocr: ocr.read, ocrPng: ocr.readPng, close: ocr.stop };
+  return { screenshot, snap, tap, drag, slide, type, ocr: ocr.read, ocrPng: ocr.readPng, close: ocr.stop };
 };
 
 export type Phone = Awaited<ReturnType<typeof connectPhone>>;

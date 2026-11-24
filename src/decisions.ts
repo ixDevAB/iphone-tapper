@@ -1,12 +1,14 @@
 import type { Phone } from "./phone.ts";
 import { center } from "./screen.ts";
+import { acted, type Action, fresh, said, sawScreen } from "./stuck.ts";
 
 const file = new URL("../decisions.log", import.meta.url);
-const older = new URL("../decisions.1.log", import.meta.url);
 const context = { task: "" };
-const largest = 20_000_000;
+const keptHours = 7;
 
-const now = () => new Date().toLocaleString("sv-SE");
+const stamp = (date: Date) => date.toLocaleString("sv-SE");
+
+const now = () => stamp(new Date());
 
 const plain = (_key: string, value: unknown) => ArrayBuffer.isView(value) ? "[bytes]" : value;
 
@@ -28,32 +30,53 @@ export const changes = (before: object, after: object) =>
   );
 
 export const rotate = async () => {
-  const size = await Deno.stat(file).then((s) => s.size, () => 0);
-  if (size > largest) await Deno.rename(file, older).catch(() => undefined);
+  const cutoff = stamp(new Date(Date.now() - keptHours * 60 * 60 * 1000));
+  const lines = await Deno.readTextFile(file).then((all) => all.split("\n").filter((l) => l), () => []);
+  const kept = lines.filter((l) => (l.match(/^\{"at":"([^"]+)"/)?.[1] ?? "") >= cutoff);
+  if (kept.length < lines.length) await Deno.writeTextFile(file, kept.map((l) => `${l}\n`).join(""));
 };
 
-export const traced = (phone: Phone): Phone => ({
-  ...phone,
-  tap: async (point) => {
-    await decide("tapped", { x: Math.round(point.x), y: Math.round(point.y) });
-    return phone.tap(point);
-  },
-  drag: async (from, to, seconds) => {
-    await decide("dragged", { from, to });
-    return phone.drag(from, to, seconds);
-  },
-  type: async (keys) => {
-    await decide("typed", { keys: keys.join("") });
-    return phone.type(keys);
-  },
-  ocrPng: async (png) => {
-    const lines = await phone.ocrPng(png);
-    await decide("read the screen", { texts: lines.map((l) => `${l.text.trim()} @${center(l).x},${center(l).y}`) });
-    return lines;
-  },
-  ocr: async (img) => {
-    const lines = await phone.ocr(img);
-    await decide("read a part", { texts: lines.map((l) => l.text.trim()) });
-    return lines;
-  },
-});
+export const traced = (phone: Phone, repeats: (task: string) => number | undefined = () => undefined): Phone => {
+  const state = { watch: fresh };
+  const check = async (action: Action) => {
+    state.watch = acted(state.watch, action);
+    if (state.watch.repeats <= (repeats(context.task) ?? 40)) return;
+    const why = said(action, state.watch.repeats);
+    state.watch = fresh;
+    await decide("stuck", { why });
+    throw new Error(why);
+  };
+  return {
+    ...phone,
+    tap: async (point) => {
+      await decide("tapped", { x: Math.round(point.x), y: Math.round(point.y) });
+      await check({ kind: "tapped", at: [point.x, point.y] });
+      return phone.tap(point);
+    },
+    drag: async (from, to, seconds) => {
+      await decide("dragged", { from, to });
+      await check({ kind: "dragged", at: [from.x, from.y, to.x, to.y] });
+      return phone.drag(from, to, seconds);
+    },
+    slide: async (from, to, seconds) => {
+      await decide("slid", { from, to });
+      await check({ kind: "slid", at: [from.x, from.y, to.x, to.y] });
+      return phone.slide(from, to, seconds);
+    },
+    type: async (keys) => {
+      await decide("typed", { keys: keys.join("") });
+      return phone.type(keys);
+    },
+    ocrPng: async (png) => {
+      const lines = await phone.ocrPng(png);
+      await decide("read the screen", { texts: lines.map((l) => `${l.text.trim()} @${center(l).x},${center(l).y}`) });
+      state.watch = sawScreen(state.watch, lines.map((l) => l.text));
+      return lines;
+    },
+    ocr: async (img) => {
+      const lines = await phone.ocr(img);
+      await decide("read a part", { texts: lines.map((l) => l.text.trim()) });
+      return lines;
+    },
+  };
+};

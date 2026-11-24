@@ -16,6 +16,8 @@ export type Recipe = {
   flags?: Env;
   switches?: Env;
   amount?: string;
+  words?: string;
+  repeats?: number;
   run: (phone: Phone, settings: Settings) => Promise<void | number>;
 };
 

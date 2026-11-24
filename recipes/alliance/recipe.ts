@@ -25,6 +25,7 @@ const titled = (lines: TextLine[], title: string) => exact(lines, title).some((l
 export const claimAlliance: Recipe = {
   description:
     "Claims the alliance chests (Alliance Gift and Loot Chest) and contributes bread to Covenant-Making until no attempts are left. Never spends gems.",
+  repeats: 200,
   run: async (phone, settings) => {
     const time = clock(settings.env.CLOCK);
     const lostMs = Number(settings.env.ALLIANCE_LOST_SECONDS || 45) * 1000;

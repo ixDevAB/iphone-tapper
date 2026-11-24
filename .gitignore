@@ -8,3 +8,4 @@ build/
 !docs/images/*.png
 .direnv/
 runs.db*
+alliance_members_*.json

@@ -30,12 +30,17 @@ export const readArgs = (recipe: Recipe, args: string[]) => {
   const empty = values.find((v) => v.value === "" || v.value.startsWith("-"));
   const amount = recipe.amount ? (parsed._ as unknown[]).map(String).find((a) => /^\d+$/.test(a)) : undefined;
 
+  const words = recipe.words
+    ? (parsed._ as unknown[]).map(String).filter((w) => !/^\d+$/.test(w) || !recipe.amount).join(",")
+    : "";
+
   const env: Env = {
     ...Object.fromEntries(values.map((v) => [v.setting, v.value])),
     ...Object.fromEntries(
       Object.entries(switches).flatMap(([flag, setting]) => parsed[bare(flag)] ? [[setting, "1"]] : []),
     ),
     ...(recipe.amount && amount ? { [recipe.amount]: amount } : {}),
+    ...(recipe.words && words ? { [recipe.words]: words } : {}),
   };
 
   const error = unknown.length

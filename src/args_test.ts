@@ -85,3 +85,14 @@ Deno.test("the evening round leaves out the once a day tasks", () => {
   assertEquals(readArgs(recipes.evening, ["--level", "7"]).error?.startsWith("unknown argument --level"), true);
   assertEquals(/Terror rallies with|two Terror/.test(recipes.evening.description), false);
 });
+
+Deno.test("alliance-members takes alliance names as words, a limit and --all", () => {
+  assertEquals(readArgs(recipes["alliance-members"], ["XLE", "woo", "VAL"]).env, { MEMBERS_TAGS: "XLE,woo,VAL" });
+  assertEquals(readArgs(recipes["alliance-members"], ["--all"]).env, { MEMBERS_ALL: "1" });
+  assertEquals(readArgs(recipes["alliance-members"], ["GRD", "--limit", "3"]).env, {
+    MEMBERS_LIMIT: "3",
+    MEMBERS_TAGS: "GRD",
+  });
+  assertEquals(readArgs(recipes["alliance-members"], []).env, {});
+  assertEquals(readArgs(recipes.intel, ["XLE"]).env, {});
+});

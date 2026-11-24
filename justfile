@@ -95,3 +95,6 @@ mystic-trial *args:
 
 island-locate-water *args:
     deno task start island-locate-water {{args}}
+
+alliance-members *args:
+    deno task start alliance-members {{args}}

@@ -15,6 +15,7 @@ It looks at the phone screen before every tap and only presses the buttons the r
 | `just collect-pet`                   | Pet skills, pet adventures and ally treasure                                        |
 | `just claim-mail`                    | Reads and claims all mail                                                           |
 | `just claim-alliance`                | Alliance chests and contributions                                                   |
+| `just alliance-members XLE WOO`      | Saves the name and player ID of every member of an alliance                         |
 | `just recruit`                       | The free hero recruits                                                              |
 | `just shop`                          | Buys from the Nomadic Merchant with resources                                       |
 | `just claim-freebies`                | Free items in the store                                                             |
@@ -151,7 +152,10 @@ It never presses **Buy & Use** or anything else that costs gems.
 When it stops it prints what it did and what it collected:
 
 ```
-intel done: 3 blue animal, 2 gold fight, 1 purple tent
+intel done: 6 (3 animals, 1 tent, 2 fights)
+  animals: 2 blue, 1 purple
+  tents: 1 purple
+  fights: 2 gold
 rewards:
   15,000 hero xp
   3 epic conquest skill book
@@ -214,6 +218,50 @@ Start it on the world map. It opens **Alliance**, then:
 - **Tech**: opens **Covenant-Making** and presses the bread **Contribute** button until the attempts are down to 0
 
 It never presses the gem Contribute button or **Go**. At the end it prints what it claimed.
+
+### Alliance member lists
+
+```sh
+just alliance-members
+just alliance-members XLE WOO VAL EVL RYL GRD
+just alliance-members --all
+just alliance-members GRD --limit 3
+just alliance-members XLE --power
+```
+
+Start it anywhere in the game. Without a name it takes your own alliance, with names those alliances, and with `--all` every alliance in the Alliance Power list. It goes to your profile, **Leaderboard**, **Alliance Power**, opens the alliance and its **Members**, and then opens one rank group at a time. For every member it presses **View**, reads the name and the ID from the profile and goes back. It only reads: it never presses **Join**, **Chat** or **Remove Friend**.
+
+Each alliance gets its own file in the project folder, named after the alliance and its kingdom, and git ignores these files:
+
+```
+alliance_members_KON_323.json
+```
+
+```json
+{
+  "scannedAt": "2026-11-23",
+  "alliance": "KON",
+  "kingdom": "323",
+  "count": 86,
+  "r5": [{ "username": "King Rupert", "playerId": "50499879", "power": "330.3M" }],
+  "r4": [],
+  "r3": [],
+  "r2": [],
+  "r1": [],
+  "skipped": [{ "username": "peatas", "rank": "R3", "why": "no menu opened" }]
+}
+```
+
+- The file is written after every member, so stopping halfway loses nothing.
+- Type the alliance tag with the same capitals as in the game: `XLE` and `xLe` are two alliances. A small letter gets a dash after it in the file name (`alliance_members_x-Le-_323.json`), because the Mac treats `xLe` and `XLE` as the same file name.
+- A player whose name is already in the file is not opened again. Run it again to pick up new members; a second run mostly scrolls.
+- A name with unusual letters is read differently on the list than on the profile. The first time that happens the player is opened once more, and the list reading is kept in `alliance_members_names.json` so it does not happen again.
+- A first run takes about 12 seconds per player, so 15 to 20 minutes for a full alliance.
+- At the end it says how many players it saved and what the game says the alliance has. If the two differ, run it again.
+- A player it could not read is tried once more at the end of their rank. Whoever is still unread is listed in `skipped` in the file, on a `not read` line at the end of the alliance and in `decisions.log`, with the reason and a picture in `build/`. Show them with `jq '.skipped' alliance_members_XLE_323.json`.
+- Each player's `power` is saved as the game shows it (`517.4M`, `1.4B`). Every run updates it from the member list for the players it scrolls past. `--power` does only that: it scrolls through the alliance, opens nobody, and says how many it updated and whose power it could not read.
+- `--limit 3` stops after three profiles per alliance, for a quick try.
+- Your own card opens no menu in the game, so you are not in the list of your own alliance unless you add yourself.
 
 ### Free hero recruits
 
@@ -452,7 +500,7 @@ just decisions 200 collect-pet
 just decisions 50 "left alone"
 ```
 
-Every task writes down what it does while it runs, in `decisions.log`: each time it reads the screen (with the texts it read and where they are), each tap, what it concluded, and every line it printed. The number is how many lines to show, and words after it keep only the lines that contain them.
+Every task writes down what it does while it runs, in `decisions.log`: each time it reads the screen (with the texts it read and where they are), each tap, what it concluded, and every line it printed. Lines older than 7 hours are deleted each time a task starts. A task that does the same tap or drag more than 40 times in a row while the screen stays the same stops itself and says `stuck`. `claim-alliance` is allowed 200, because contributing presses one button many times. The number is how many lines to show, and words after it keep only the lines that contain them.
 
 ```
 22:47:29 collect-backpack  read the screen: Backpack @92,77 | Resources @49,118 | 1,571 @176,433 | ...
@@ -692,7 +740,7 @@ The recipes are made on an iPhone 17 Pro. On other models the buttons sit elsewh
 | `is not reachable`                                                                                        | Unlock the phone and keep it unlocked while starting. If the phone was restarted, see [After restarting the phone](#after-restarting-the-phone).              |
 | `no apple development certificate found`                                                                  | Do step 3 of the first time setup.                                                                                                                            |
 | `several developer teams found`                                                                           | Create the settings file and copy one of the `TEAM_ID=` lines it shows into it.                                                                               |
-| `the phone stopped accepting taps`                                                                        | The phone locked. Unlock it, set Auto-Lock to Never and start again.                                                                                          |
+| `the phone stopped accepting taps`                                                                        | The phone locked. Unlock it, set Auto-Lock to Never and start again. The next start restarts the helper on the phone by itself.                               |
 | `lost the connection to the phone`                                                                        | The cable came loose or the phone locked. Plug it in, unlock it and start again.                                                                              |
 | `xcodebuild failed, see build.log`                                                                        | Check that you are signed in to Xcode and that the phone is unlocked.                                                                                         |
 | Starting takes minutes                                                                                    | The phone is connected over Wi-Fi. Plug in the cable.                                                                                                         |

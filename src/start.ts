@@ -29,17 +29,30 @@ const settings = { ...config, env: { ...config.env, ...args.env }, given: args.g
 
 const startedAt = Date.now();
 const took = () => `${((Date.now() - startedAt) / 1000).toFixed(0)}s`;
-const phone = await findPhone(config.udid);
-console.log(`found ${phone.name} (${took()})`);
+const helper: { child?: Deno.ChildProcess } = {};
 
-const base = `http://[${phone.tunnelIp}]:8100`;
+const giveUp = (error: unknown): never => {
+  console.log(`could not start: ${error instanceof Error ? error.message : String(error)}`);
+  runs.close();
+  helper.child?.kill();
+  Deno.exit(0);
+};
 
-await ensureOcr(settings.env);
-await ensureWda(phone.udid, config.teamId, config.bundleId, on(settings.env, "WDA_REBUILD"));
-const wda = await startWda(phone.udid, config.teamId, config.bundleId, base);
-console.log(`the helper on the phone is ready (${took()})`);
-const connected = traced(await connectPhone(base));
-await rotate();
+const setUp = async () => {
+  const phone = await findPhone(config.udid);
+  console.log(`found ${phone.name} (${took()})`);
+  const base = `http://[${phone.tunnelIp}]:8100`;
+  await ensureOcr(settings.env);
+  await ensureWda(phone.udid, config.teamId, config.bundleId, on(settings.env, "WDA_REBUILD"));
+  helper.child = await startWda(phone.udid, config.teamId, config.bundleId, base);
+  console.log(`the helper on the phone is ready (${took()})`);
+  const connected = traced(await connectPhone(base), (task) => (recipes[task] ?? recipe).repeats);
+  await rotate();
+  return connected;
+};
+
+const connected = await setUp().catch(giveUp);
+const wda = helper.child;
 const say = console.log;
 console.log = (...args: unknown[]) => {
   say(...args);

@@ -34,7 +34,11 @@ export const findPhone = async (udid?: string) => {
     phone.hardwareProperties.udid,
   ]);
   const tunnelIp = details?.connectionProperties.tunnelIPAddress;
-  if (!tunnelIp) throw new Error(`${phone.deviceProperties.name} is not reachable, unlock it and try again`);
+  if (!tunnelIp) {
+    throw new Error(
+      `${phone.deviceProperties.name} is not reachable. Unlock it and try again. If it was restarted, plug in the cable once.`,
+    );
+  }
 
   return { udid: phone.hardwareProperties.udid, name: phone.deviceProperties.name, tunnelIp };
 };

@@ -5,6 +5,7 @@ import { on, type Recipe } from "../../src/recipe.ts";
 import { center } from "../../src/screen.ts";
 import { clock, sleep } from "../../src/time.ts";
 import { goHome } from "../../src/world.ts";
+import { fill } from "./facts.ts";
 import { allianceField, chatBar, onChat, sendButton, shows, type Spot } from "./pure.ts";
 
 const closeCross = { x: 380, y: 75 };
@@ -26,14 +27,18 @@ const press = async (phone: Phone, point: { x: number; y: number }, wait = 1500)
 
 export const writeAlliance: Recipe = {
   description:
-    "Writes one message in the alliance chat: opens the chat from the bar above the bottom buttons, checks that the alliance channel is the one open, types the message and presses Send. With --dry it types the message, does not send it and removes it again.",
+    "Writes one message in the alliance chat: opens the chat from the bar above the bottom buttons, checks that the alliance channel is the one open, types the message and presses Send. {daily_fact} in the message becomes today's history fact, and {rand%20 'text'} adds text only 20 percent of the time. With --dry it types the message, does not send it and removes it again.",
   text: "CHAT_TEXT",
   switches: { "--dry": "CHAT_DRY" },
   run: async (phone, settings) => {
     const time = clock(settings.env.CLOCK);
     const log = (text: string) => console.log(`${time()} ${text}`);
-    const message = (settings.env.CHAT_TEXT ?? "").trim();
+    const message = fill(settings.env.CHAT_TEXT ?? "", new Date());
     const dry = on(settings.env, "CHAT_DRY");
+    if (!message && (settings.env.CHAT_TEXT ?? "").trim()) {
+      log("nothing to write this time, the random parts of the message were all left out");
+      return;
+    }
     if (!message) throw new Error('give the message, for example: just write-alliance "rally in 5 minutes"');
     await requireIphone(phone);
     const first = await see(phone);

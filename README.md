@@ -283,7 +283,7 @@ Start it on the town map or the world map. It presses the dimmed chat bar just a
 - It only types when the message field says `[Alliance]`, so nothing can end up in the world chat.
 - It reads the field back before sending. If the text is not there as typed, it removes it and sends nothing.
 - After **Send** it looks for the message in the chat and says `sent to the alliance chat`, or stops and tells you to look if it can't see it.
-- `{daily_fact}` in the message is replaced by today's history fact: `just write-alliance "Did you know? {daily_fact}"`. The 365 facts are in `recipes/chat/facts.json`, one for each day of the year, spread over Africa, Asia, the Americas, Oceania, the Middle East and Europe. Edit that file to change one.
+- `{daily_fact}` in the message is replaced by a history fact: `just write-alliance "Did you know? {daily_fact}"`. Four times in five it is what happened on this day (`recipes/chat/on_this_day.json`), otherwise a general fact (`recipes/chat/facts.json`). Both lists are spread over Africa, Asia, the Americas, Oceania, the Middle East and Europe. Edit the files to change a fact. See [Morning message](#morning-message) for all the marks.
 - `{rand%20 'Rally at reset.'}` writes that text only 20 percent of the time, so the message is not the same every day. Each such part is rolled on its own, and it may hold `{daily_fact}`. With `|` only one of several texts is written, from a single roll: `{rand%5 'a beer' | rand%0.5 'a beer, stat!'}` gives the first 5 percent of the time, the second 0.5 percent of the time and never both. A last text without `rand%` is used whenever none of the others is: `{rand%10 'Rally today!' | 'No rally today.'}`. If nothing is left of the message, nothing is sent. The text can be in single or double quotes. In `.env` use single quotes inside the double-quoted value: `MORNING_MESSAGE="Good morning! {rand%20 'Rally at reset.'} {daily_fact}"`.
 - `--dry` does everything but send: it types the message and removes it again.
 - Put the message in quotes if it has an apostrophe, a question mark or other signs the shell cares about. A word that starts with `--` is taken as an option.
@@ -446,12 +446,15 @@ Set `MORNING_MESSAGE` in `.env` and the morning round writes it in the alliance 
 MORNING_MESSAGE="Good morning KON! {daily_fact} {rand%5 'and will someone please get WALKER a beer' | rand%0.5 'a beer, stat!'}"
 ```
 
-| In the message                     | What is written                                                                                                      |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `{daily_fact}`                     | Today's history fact from `recipes/chat/facts.json`: 365 facts, one per day of the year, from all parts of the world |
-| `{rand%5 'text'}`                  | The text, 5 percent of the time. Decimals work: `rand%0.5`                                                           |
-| `{rand%5 'one' \| rand%0.5 'two'}` | One of the texts at most, from a single roll: `one` 5 percent of the time, `two` 0.5 percent, otherwise nothing      |
-| `{rand%10 'one' \| 'two'}`         | `one` 10 percent of the time, otherwise `two`                                                                        |
+| In the message                          | What is written                                                                                                                                                                          |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `{rand%80 on_this_day \| history_fact}` | What happened on this day 80 percent of the time, otherwise a general fact. A choice can be a fact list by name, without quotes, so you set the share yourself                           |
+| `{daily_fact}`                          | Short for `{rand%80 on_this_day \| history_fact}`                                                                                                                                        |
+| `{on_this_day}`                         | What happened on today's date in an earlier year, from `recipes/chat/on_this_day.json`: one event for each of the 366 dates, taken from Wikipedia's page for that day (kept in `source`) |
+| `{history_fact}`                        | A general history fact from `recipes/chat/facts.json`, 365 of them                                                                                                                       |
+| `{rand%5 'text'}`                       | The text, 5 percent of the time. Decimals work: `rand%0.5`                                                                                                                               |
+| `{rand%5 'one' \| rand%0.5 'two'}`      | One of the texts at most, from a single roll: `one` 5 percent of the time, `two` 0.5 percent, otherwise nothing                                                                          |
+| `{rand%10 'one' \| 'two'}`              | `one` 10 percent of the time, otherwise `two`                                                                                                                                            |
 
 - Use single quotes around the texts inside the double-quoted value. Double quotes inside it cut the value off.
 - A text may hold `{daily_fact}`, an apostrophe or a `|`.

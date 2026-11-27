@@ -1,9 +1,11 @@
 import { crop, difference, fromPng, type Image, loadImage, type Region, scaleUp, toPng } from "./image.ts";
 import { countOn } from "./count.ts";
+import { freeName, loadTiles, nameFor, type Pictured } from "./naming.ts";
 import type { Phone } from "./phone.ts";
 import { sleep } from "./time.ts";
 
 const rewardsDir = new URL("../assets/rewards/", import.meta.url);
+const backpackDir = new URL("../assets/backpack/", import.meta.url);
 
 const icon = { width: 96, height: 84, up: 62 };
 
@@ -96,6 +98,9 @@ export const saveIcon = (dir: URL, name: string, img: Image) => Deno.writeFile(n
 export const rewardCounter = (phone: Phone) => {
   const library = loadLibrary(rewardsDir);
   const totals = new Map<string, number>();
+  const backpack: { tiles?: Pictured[] } = {};
+  const fromBackpack = (img: Image) => nameFor(img, backpack.tiles ??= loadTiles(backpackDir));
+  const filesIn = () => [...Deno.readDirSync(rewardsDir)].map((e) => e.name.replace(/\.png$/, ""));
 
   const count = async (fight: boolean) => {
     await sleep(1500);
@@ -105,11 +110,13 @@ export const rewardCounter = (phone: Phone) => {
     for (const tile of tiles) {
       const known = nameOf(shot, tile, library);
       const numbers = library.flatMap((entry) => entry.name.match(/^unknown-(\d+)$/)?.[1] ?? []).map(Number);
-      const name = known ?? `unknown-${String(Math.max(0, ...numbers) + 1).padStart(2, "0")}`;
-      if (!known) {
-        const img = iconOf(shot, tile);
-        await saveIcon(rewardsDir, name, img);
+      const img = known ? undefined : iconOf(shot, tile);
+      const guessed = img ? fromBackpack(img) : undefined;
+      const name = known ?? guessed ?? `unknown-${String(Math.max(0, ...numbers) + 1).padStart(2, "0")}`;
+      if (img) {
+        await saveIcon(rewardsDir, guessed ? freeName(filesIn(), guessed) : name, img);
         library.push({ name, img });
+        if (guessed) console.log(`named a new reward from the backpack pictures: ${guessed}`);
       }
       const text = (await phone.ocr(scaleUp(crop(shot, countRegion(tile)), 3))).map((l) => l.text).join(" ");
       const amount = /\d/.test(text) ? amountOf(text) : countOn(shot, tile) ?? 1;

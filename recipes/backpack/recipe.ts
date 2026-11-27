@@ -1,3 +1,4 @@
+import { loadTiles, nameUnknowns, shrunk } from "../../src/naming.ts";
 import { decide } from "../../src/decisions.ts";
 import { exitLine, look, requireIphone, type Seen } from "../../src/flow.ts";
 import { crop, type Point, toPng } from "../../src/image.ts";
@@ -15,6 +16,7 @@ const lists = [{ name: "Resources", x: 49 }, { name: "Other", x: 353 }];
 const tabY = 121;
 const maxButton = 341;
 const picturesDir = new URL("../../assets/backpack/", import.meta.url);
+const rewardsDir = new URL("../../assets/rewards/", import.meta.url);
 
 export const collectBackpack: Recipe = {
   description:
@@ -94,6 +96,8 @@ export const collectBackpack: Recipe = {
         await Deno.writeFile(new URL(`${name}.png`, picturesDir), toPng(tile));
         items.push(itemFrom(name, tile));
         console.log(`${time()} learned what ${name} looks like`);
+        const named = await nameUnknowns(rewardsDir, loadTiles(picturesDir), { name, img: shrunk(tile) });
+        named.forEach((n) => console.log(`${time()} the reward picture ${n.from} is ${n.to}, renamed`));
       }
       const uses = exact(opened.lines, "Use").filter((l) => center(l).y > panel.top);
       const use = uses.find((l) => Math.abs(center(l).x - 201) < 40) ??

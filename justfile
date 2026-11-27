@@ -102,3 +102,6 @@ alliance-members *args:
 [positional-arguments]
 write-alliance *args:
     deno task start write-alliance "$@"
+
+name-rewards:
+    deno task name-rewards

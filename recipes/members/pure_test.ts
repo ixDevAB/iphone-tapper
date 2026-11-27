@@ -19,7 +19,6 @@ import {
   signature,
   tagOf,
   tidyName,
-  withName,
 } from "./pure.ts";
 
 const at = (text: string, x: number, y: number) => ({ text, x, y });
@@ -120,7 +119,7 @@ Deno.test("the file is grouped by rank with the totals on top", () => {
     "R3:Redbarron",
     ":Newcomer",
   ]);
-  assertEquals(fileName("XLE", "323"), "alliance_members_XLE_323.json");
+  assertEquals(fileName("XLE", "323", "2026-11-24"), "alliance_members_XLE_323_2026-11-24.json");
 });
 
 Deno.test("a profile gives its id, kingdom, alliance and name", () => {
@@ -171,15 +170,6 @@ Deno.test("a name read a little differently on the list and on the profile is th
   );
 });
 
-Deno.test("a player whose name is read differently on the list is known by the readings kept for them", () => {
-  const members = [{ username: "Kïnû Îç°řü§", playerId: "31503070", rank: "R3" }];
-  assertEquals(known(members, "Kinu Icoru$")?.playerId, undefined);
-  const names = withName({}, "31503070", "Kïnû Îç°řü§", "Kinu Icoru$");
-  assertEquals(names, { "31503070": ["Kinu Icoru$"] });
-  assertEquals(known(members, "Kinu Icoru$", names)?.playerId, "31503070");
-  assertEquals(withName(names, "31503070", "Kïnû Îç°řü§", "Kinu Icoru$"), names);
-});
-
 Deno.test("a member with power in billions is a card too", () => {
   const cards = cardsOn([
     at("Smockes", 124, 445),
@@ -193,7 +183,7 @@ Deno.test("a member with power in billions is a card too", () => {
 Deno.test("an alliance tag keeps its letter case, so xLe is not XLE", () => {
   assertEquals(["[xLe|MiniXLE", "[XLE]StrawHatPirates"].map(tagOf), ["xLe", "XLE"]);
   assertEquals(allianceFrom([at("Alliance: xLe", 191, 738)]), "xLe");
-  assertEquals(fileName("xLe", "323"), "alliance_members_x-Le-_323.json");
+  assertEquals(fileName("xLe", "323", "2026-11-24"), "alliance_members_x-Le-_323_2026-11-24.json");
 });
 
 Deno.test("power is read from a card and from a profile, without the icon in front of it", () => {

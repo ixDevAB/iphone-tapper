@@ -72,15 +72,7 @@ export const sameName = (one: string, other: string) => {
   return a === b || distance(a, b) <= (short >= 10 ? 2 : short >= 6 ? 1 : 0);
 };
 
-export type Names = Record<string, string[]>;
-
-export const known = (members: Member[], name: string, names: Names = {}) =>
-  members.find((m) => sameName(m.username, name) || (names[m.playerId] ?? []).some((n) => sameName(n, name)));
-
-export const withName = (names: Names, playerId: string, username: string, read: string): Names =>
-  sameName(username, read) || (names[playerId] ?? []).some((n) => sameName(n, read))
-    ? names
-    : { ...names, [playerId]: [...(names[playerId] ?? []), read] };
+export const known = (members: Member[], name: string) => members.find((m) => sameName(m.username, name));
 
 export const grouped = (members: Member[]) => {
   const sorted = members.toSorted((a, b) => a.username.toLowerCase().localeCompare(b.username.toLowerCase()));
@@ -142,4 +134,5 @@ export const allianceRows = (lines: Spot[]) =>
 
 export const fileTag = (alliance: string) => alliance.replace(/[a-z]/g, (letter) => `${letter}-`);
 
-export const fileName = (alliance: string, kingdom: string) => `alliance_members_${fileTag(alliance)}_${kingdom}.json`;
+export const fileName = (alliance: string, kingdom: string, date: string) =>
+  `alliance_members_${fileTag(alliance)}_${kingdom}_${date}.json`;

@@ -9,3 +9,4 @@ build/
 .direnv/
 runs.db*
 alliance_members_*.json
+players.json

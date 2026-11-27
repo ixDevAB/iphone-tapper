@@ -20,7 +20,6 @@ import {
   type Member,
   membersFrom,
   nameFrom,
-  type Names,
   powerFrom,
   powerText,
   sameName,
@@ -28,10 +27,10 @@ import {
   type Skipped,
   type Spot,
   tidyName,
-  withName,
   withoutSkipped,
   withSkipped,
 } from "./pure.ts";
+import { type Catalogue, catalogueText, findPlayer, latestName, sawOnList, sawProfile } from "./catalogue.ts";
 
 const root = new URL("../../", import.meta.url);
 const profileButton = { x: 26, y: 65 };
@@ -152,15 +151,15 @@ const ownTag = async (phone: Phone) => {
   return tag;
 };
 
-const namesFile = new URL("alliance_members_names.json", root);
+const catalogueFile = new URL("players.json", root);
 
-const readNames = (): Promise<Names> => Deno.readTextFile(namesFile).then(JSON.parse, () => ({}));
+const readCatalogue = (): Promise<Catalogue> => Deno.readTextFile(catalogueFile).then(JSON.parse, () => ({}));
 
 type Store = {
   refresh: boolean;
   powered: Set<string>;
   tag: string;
-  names: Names;
+  catalogue: Catalogue;
   members: Member[];
   skipped: Skipped[];
   kingdoms: string[];
@@ -169,11 +168,28 @@ type Store = {
   expected: number;
 };
 
-const existing = async (tag: string) => {
+const saveCatalogue = (store: Store) => Deno.writeTextFile(catalogueFile, catalogueText(store.catalogue));
+
+const who = (store: Store, name: string) => {
+  const direct = known(store.members, name);
+  if (direct) return direct;
+  const playerId = findPlayer(store.catalogue, name, store.tag);
+  if (!playerId) return undefined;
+  const listed = store.members.find((m) => m.playerId === playerId);
+  if (listed) return listed;
+  const from = store.catalogue[playerId];
+  const member: Member = { username: latestName(from), playerId, rank: "" };
+  store.members.push(member);
+  if (from.kingdom) store.kingdoms.push(from.kingdom);
+  return member;
+};
+
+const existing = async (tag: string, date: string) => {
   const names = await Array.fromAsync(Deno.readDir(root)).catch(() => []);
-  const found = names.map((e) => e.name.match(new RegExp(`^alliance_members_${fileTag(tag)}_(\\d+)\\.json$`))).find((
-    m,
-  ) => m);
+  const found = names.map((e) => e.name.match(new RegExp(`^alliance_members_${fileTag(tag)}_(\\d+)_${date}\\.json$`)))
+    .find((
+      m,
+    ) => m);
   if (!found) return undefined;
   const stored = await Deno.readTextFile(new URL(found[0], root)).then(JSON.parse, () => ({}));
   return { kingdom: found[1], members: membersFrom(stored) };
@@ -186,8 +202,9 @@ const kingdomOf = (store: Store) =>
     ?.[0] ?? "0";
 
 const save = async (store: Store) => {
+  if (!store.kingdoms.length) return;
   const kingdom = kingdomOf(store);
-  const path = new URL(fileName(store.tag, kingdom), root);
+  const path = new URL(fileName(store.tag, kingdom, store.scannedAt), root);
   await Deno.writeTextFile(
     path,
     fileText({ scannedAt: store.scannedAt, alliance: store.tag, kingdom }, store.members, store.skipped),
@@ -249,13 +266,21 @@ const visit = async (
   } else {
     const username = tidyName(profile.name);
     const already = store.members.find((m) => m.playerId === profile.id);
-    const names = withName(store.names, profile.id, already?.username ?? username, card.name);
-    if (names !== store.names) {
-      store.names = names;
-      await Deno.writeTextFile(namesFile, JSON.stringify(names, null, 2) + "\n");
+    const told = sawProfile(
+      store.catalogue,
+      profile.id,
+      { name: username, alliance: store.tag, kingdom: profile.kingdom, power: profile.power },
+      store.scannedAt,
+    );
+    store.catalogue = sawOnList(told.catalogue, profile.id, card.name);
+    await saveCatalogue(store);
+    if (told.renamedFrom) {
+      await decide("renamed", { playerId: profile.id, from: told.renamedFrom, to: username });
+      log(`renamed: ${told.renamedFrom} is now ${username} (${profile.id})`);
     }
     if (already) {
-      already.rank = already.rank || rank;
+      already.username = username || already.username;
+      already.rank = rank;
       already.power = profile.power ?? already.power;
     } else {store.members.push({
         username,
@@ -337,17 +362,15 @@ const scanGroup = async (
     const keys = all.map((c) => c.key);
     const shown = all.filter((c) => c.y >= 270);
     shown.forEach((c) => {
-      const match = known(store.members, c.name, store.names);
-      if (match && !match.rank) match.rank = group;
+      const match = who(store, c.name);
+      if (match) match.rank = group;
       if (match && c.power) {
         match.power = c.power;
         store.powered.add(match.playerId);
       }
     });
     await save(store);
-    const next = store.refresh
-      ? undefined
-      : shown.find((c: Card) => !seenBefore(c) && !known(store.members, c.name, store.names));
+    const next = store.refresh ? undefined : shown.find((c: Card) => !seenBefore(c) && !who(store, c.name));
     if (next && next.y > 590 && !lifted) {
       await step(phone, 200);
       return pass(0, "", scrolled + 1, true, keys);
@@ -385,7 +408,8 @@ const scanLeader = async (phone: Phone, store: Store, budget: { left: number }, 
   const name = label
     ? seen.spots.find((l) => l.y > label.y + 12 && l.y < label.y + 40 && l.x > 150 && !/\d\s*[KMB]$/.test(l.text))
     : undefined;
-  const leader = name && known(store.members, name.text, store.names);
+  const leader = name ? who(store, name.text) : undefined;
+  if (leader) leader.rank = "R5";
   const power = name && seen.spots.find((l) => l.y > name.y + 15 && l.y < name.y + 40 && powerText(l.text));
   if (leader && power) {
     leader.power = powerText(power.text) ?? leader.power;
@@ -401,14 +425,15 @@ const scanLeader = async (phone: Phone, store: Store, budget: { left: number }, 
 const scanOne = async (phone: Phone, tag: string, limit: number, refresh: boolean, log: (t: string) => void) => {
   log(`== ${tag} ==`);
   const expected = await openAlliance(phone, tag);
-  const before = await existing(tag);
+  const scannedAt = new Date().toLocaleDateString("sv-SE");
+  const before = await existing(tag, scannedAt);
   const store: Store = {
     tag,
     members: before?.members ?? [],
     skipped: [],
-    names: await readNames(),
+    catalogue: await readCatalogue(),
     kingdoms: before ? [before.kingdom] : [],
-    scannedAt: new Date().toISOString().slice(0, 10),
+    scannedAt,
     expected,
     refresh,
     powered: new Set(),
@@ -423,6 +448,14 @@ const scanOne = async (phone: Phone, tag: string, limit: number, refresh: boolea
     await decide("members not read", { alliance: tag, players: store.skipped });
     log(`${tag}: not read: ${store.skipped.map((s) => `${s.username} (${s.rank}, ${s.why})`).join(", ")}`);
   }
+  store.catalogue = store.members.reduce(
+    (all, m) =>
+      all[m.playerId]
+        ? { ...all, [m.playerId]: { ...all[m.playerId], alliance: tag, power: m.power ?? all[m.playerId].power } }
+        : all,
+    store.catalogue,
+  );
+  await saveCatalogue(store);
   const stale = store.members.filter((m) => !store.powered.has(m.playerId)).map((m) => m.username);
   if (refresh) {
     log(`${tag}: power updated for ${store.members.length - stale.length} of ${store.members.length} players`);
@@ -441,7 +474,7 @@ const split = (text = "") => text.split(",").map((t) => t.trim()).filter((t) => 
 
 export const allianceMembers: Recipe = {
   description:
-    "Reads the name and player id of every member of the alliances you name (or all of them with --all, or your own with no name) from their profiles and saves one file per alliance, alliance_members_<alliance>_<kingdom>.json, grouped by rank. A player already in the file is not opened again. Each player's power is saved too and updated from the list on every run; --power only updates power and opens nobody.",
+    "Reads the name and player id of every member of the alliances you name (or all of them with --all, or your own with no name) from their profiles and saves one file per alliance and day, alliance_members_<alliance>_<kingdom>_<date>.json, grouped by rank. Every player it has seen is kept in players.json under their id with all their names, so a known player is not opened again and a renamed one is noticed. Each player's power is saved too and updated from the list on every run; --power only updates power and opens nobody.",
   words: "MEMBERS_TAGS",
   flags: { "--limit": "MEMBERS_LIMIT" },
   switches: { "--all": "MEMBERS_ALL", "--power": "MEMBERS_POWER" },

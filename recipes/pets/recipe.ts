@@ -10,6 +10,7 @@ import { onWorld } from "../../src/world.ts";
 const pawButton = { x: 369, y: 669 };
 const beastCage = { x: 351, y: 795 };
 const adventure = { x: 334, y: 795 };
+export const huntAll = /^\W*\w?[uo]nt\s*a[il1|]{1,2}\W*$/i;
 const allyTreasure = { x: 351, y: 810 };
 const closeTreasure = { x: 372, y: 217 };
 const treasureDot = { x: 1086, y: 2330, width: 60, height: 60 };
@@ -126,7 +127,7 @@ export const collectPet: Recipe = {
           await press(phone, collect);
           return s;
         }
-        const hunt = matching(lines, like("hunt all"));
+        const hunt = matching(lines, huntAll);
         if (hunt && !s.noStamina && s.hunts < 3) {
           console.log(`${time()} sending the pets hunting`);
           await press(phone, hunt);

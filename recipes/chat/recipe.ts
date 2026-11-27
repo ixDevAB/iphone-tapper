@@ -27,7 +27,7 @@ const press = async (phone: Phone, point: { x: number; y: number }, wait = 1500)
 
 export const writeAlliance: Recipe = {
   description:
-    "Writes one message in the alliance chat: opens the chat from the bar above the bottom buttons, checks that the alliance channel is the one open, types the message and presses Send. {daily_fact} in the message becomes today's history fact, and {rand%20 'text'} adds text only 20 percent of the time. With --dry it types the message, does not send it and removes it again.",
+    "Writes one message in the alliance chat: opens the chat from the bar above the bottom buttons, checks that the alliance channel is the one open, types the message and presses Send. {daily_fact} in the message becomes a history fact (usually what happened on this day), and {rand%20 'text'} adds text only 20 percent of the time. With --dry it types the message, does not send it and removes it again.",
   text: "CHAT_TEXT",
   switches: { "--dry": "CHAT_DRY" },
   run: async (phone, settings) => {

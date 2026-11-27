@@ -107,3 +107,8 @@ Deno.test("write-alliance takes everything typed as one message", () => {
   });
   assertEquals(readArgs(recipes["write-alliance"], []).env, {});
 });
+
+Deno.test("heal takes --all, and the morning round does not take heal's own arguments", () => {
+  assertEquals(readArgs(recipes.heal, ["--all"]).env, { HEAL_ALL: "1" });
+  assertEquals(readArgs(recipes.morning, ["--allies", "5"]).error !== undefined, true);
+});

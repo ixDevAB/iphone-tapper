@@ -1,10 +1,11 @@
 import { requireIphone } from "../../src/flow.ts";
 import type { Image } from "../../src/image.ts";
 import type { Phone } from "../../src/phone.ts";
-import type { Recipe } from "../../src/recipe.ts";
+import { on, type Recipe } from "../../src/recipe.ts";
 import { center, exact, has, saveShot } from "../../src/screen.ts";
 import { clock, sleep } from "../../src/time.ts";
-import { atTown } from "../../src/world.ts";
+import type { TextLine } from "../../src/ocr.ts";
+import { atTown, goHome } from "../../src/world.ts";
 import { alliesFrom, amountIn, cancelHeal, healButton, refs, setBatch, shows, tiers } from "./window.ts";
 
 const visibleButton = (screen: Image) =>
@@ -28,10 +29,44 @@ const watchForAllies = async (phone: Phone, until: number): Promise<number | und
   return allies ?? watchForAllies(phone, until);
 };
 
+const injuredButton = (lines: TextLine[]) =>
+  lines.find((l) => /^\d+%$/.test(l.text.trim()) && center(l).x > 250 && center(l).y > 650 && center(l).y < 790);
+
+const healOnce = async (phone: Phone, log: (text: string) => void) => {
+  const opened = async (tries: number): Promise<Image | undefined> => {
+    const screen = await phone.screenshot();
+    if (visibleButton(screen)) return screen;
+    const lines = await phone.ocr(screen);
+    const injured = injuredButton(lines);
+    if (tries <= 0 || !injured || !atTown(lines)) return undefined;
+    await phone.tap({ x: center(injured).x, y: center(injured).y - 19 });
+    await sleep(1500);
+    return opened(tries - 1);
+  };
+  const screen = await opened(2);
+  if (!screen) {
+    log("no injured troops button on the world map, nothing to heal");
+    return;
+  }
+  if (visibleButton(screen) === "help") {
+    await phone.tap(healButton);
+    log("a heal is already running, pressed Help");
+  } else {
+    await phone.tap(healButton);
+    await sleep(700);
+    const helping = shows(await phone.screenshot(), refs.help);
+    if (helping) await phone.tap(healButton);
+    log(`pressed Heal for the troops the window had selected${helping ? ", then Help" : ""}`);
+  }
+  await sleep(800);
+  await goHome(phone, 4);
+};
+
 export const heal: Recipe = {
   description:
-    "Presses Heal, then Help, grows the batch while allies finish every heal, and cancels a heal they cannot finish. Never presses Speed Up or Finish.",
+    "Presses Heal, then Help, grows the batch while allies finish every heal, and cancels a heal they cannot finish. With --all it opens the Heal Injured window, presses Heal once for what the window has selected, presses Help and leaves. Never presses Speed Up or Finish.",
   flags: { "--allies": "START_ALLIES", "-a": "START_ALLIES" },
+  switches: { "--all": "HEAL_ALL" },
   run: async (phone, settings) => {
     const time = clock(settings.env.CLOCK);
     const fallbackPerAlly = Number(settings.env.TROOPS_PER_ALLY || 60);
@@ -50,6 +85,7 @@ export const heal: Recipe = {
     const holdMs = Number(settings.env.HOLD_AFTER_CANCEL_SECONDS || 300) * 1000;
 
     await requireIphone(phone);
+    if (on(settings.env, "HEAL_ALL")) return healOnce(phone, (text) => console.log(`${time()} ${text}`));
 
     const progress: { left?: number; at: number } = { at: Date.now() };
 
@@ -213,9 +249,7 @@ export const heal: Recipe = {
           await sleep(1200);
           return step({ ...s, openedAt: Date.now() });
         }
-        const injured = lines.find((l) =>
-          /^\d+%$/.test(l.text.trim()) && center(l).x > 250 && center(l).y > 650 && center(l).y < 790
-        );
+        const injured = injuredButton(lines);
         if (injured && atTown(lines)) {
           console.log(`${time()} opening the Heal Injured window`);
           await phone.tap({ x: center(injured).x, y: center(injured).y - 19 });

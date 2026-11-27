@@ -1,4 +1,4 @@
-import { difference, loadImage, type Point } from "../../src/image.ts";
+import { closest, loadImage, type Point } from "../../src/image.ts";
 import { leaveRewards, type Next, press, runFlow, type Seen } from "../../src/flow.ts";
 import type { TextLine } from "../../src/ocr.ts";
 import { on, type Recipe } from "../../src/recipe.ts";
@@ -177,8 +177,8 @@ export const intel: Recipe = {
           : { ...s, leaving: false };
         const screen = img();
         if (usePan && !s.panTried) {
-          const panDifference = difference(screen, pan.img, pan.x, pan.y);
-          const there = panDifference < 12;
+          const panDifference = closest(screen, pan.img, pan.x, pan.y, 4);
+          const there = panDifference < 16;
           console.log(
             `${time()} ${
               there

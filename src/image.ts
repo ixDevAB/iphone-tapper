@@ -51,5 +51,10 @@ export const difference = (screen: Image, ref: Image, x0: number, y0: number) =>
   return total / (ref.width * ref.height * 3);
 };
 
+export const closest = (screen: Image, ref: Image, x0: number, y0: number, reach: number) => {
+  const steps = Array.from({ length: reach * 2 + 1 }, (_, i) => i - reach);
+  return Math.min(...steps.flatMap((dx) => steps.map((dy) => difference(screen, ref, x0 + dx, y0 + dy))));
+};
+
 export const toPng = (img: Image) =>
   encode({ width: img.width, height: img.height, data: img.data, channels: img.channels });

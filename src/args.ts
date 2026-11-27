@@ -34,6 +34,8 @@ export const readArgs = (recipe: Recipe, args: string[]) => {
     ? (parsed._ as unknown[]).map(String).filter((w) => !/^\d+$/.test(w) || !recipe.amount).join(",")
     : "";
 
+  const text = recipe.text ? (parsed._ as unknown[]).map(String).join(" ") : "";
+
   const env: Env = {
     ...Object.fromEntries(values.map((v) => [v.setting, v.value])),
     ...Object.fromEntries(
@@ -41,6 +43,7 @@ export const readArgs = (recipe: Recipe, args: string[]) => {
     ),
     ...(recipe.amount && amount ? { [recipe.amount]: amount } : {}),
     ...(recipe.words && words ? { [recipe.words]: words } : {}),
+    ...(recipe.text && text ? { [recipe.text]: text } : {}),
   };
 
   const error = unknown.length

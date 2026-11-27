@@ -96,3 +96,14 @@ Deno.test("alliance-members takes alliance names as words, a limit and --all", (
   assertEquals(readArgs(recipes["alliance-members"], []).env, {});
   assertEquals(readArgs(recipes.intel, ["XLE"]).env, {});
 });
+
+Deno.test("write-alliance takes everything typed as one message", () => {
+  assertEquals(readArgs(recipes["write-alliance"], ["rally", "in", "5", "minutes"]).env, {
+    CHAT_TEXT: "rally in 5 minutes",
+  });
+  assertEquals(readArgs(recipes["write-alliance"], ["hello, all", "--dry"]).env, {
+    CHAT_DRY: "1",
+    CHAT_TEXT: "hello, all",
+  });
+  assertEquals(readArgs(recipes["write-alliance"], []).env, {});
+});

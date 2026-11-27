@@ -1,4 +1,5 @@
 import { claimAll, collectAll } from "../recipes/all/recipe.ts";
+import { writeAlliance } from "../recipes/chat/recipe.ts";
 import { claimAlliance } from "../recipes/alliance/recipe.ts";
 import { allianceMembers } from "../recipes/members/recipe.ts";
 import { backpackNames } from "../recipes/backpack/names.ts";
@@ -32,6 +33,7 @@ export const recipes: Record<string, Recipe> = {
   "claim-mail": claimMail,
   "claim-alliance": claimAlliance,
   "alliance-members": allianceMembers,
+  "write-alliance": writeAlliance,
   recruit,
   morning,
   evening,

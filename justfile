@@ -98,3 +98,7 @@ island-locate-water *args:
 
 alliance-members *args:
     deno task start alliance-members {{args}}
+
+[positional-arguments]
+write-alliance *args:
+    deno task start write-alliance "$@"

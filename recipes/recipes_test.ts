@@ -11,7 +11,7 @@ import { withSetting } from "./heal/calibrate.ts";
 import { alliesFrom, amountIn } from "./heal/window.ts";
 import { findMarkers, findPins } from "./intel/markers.ts";
 import { intelSummary } from "./intel/summary.ts";
-import { morningMessage } from "./morning/recipe.ts";
+import { healAll, morningMessage } from "./morning/recipe.ts";
 import { huntAll } from "./pets/recipe.ts";
 import { gemConfirm, maySpend, priceIn, priceNear } from "./shop/confirm.ts";
 
@@ -315,4 +315,9 @@ Deno.test("the morning message is only written when one is set", () => {
   assertEquals(morningMessage.when?.({ MORNING_MESSAGE: "Good morning KON from Phelianbot!" }), true);
   assertEquals(morningMessage.env?.({ MORNING_MESSAGE: "Good morning", CHAT_DRY: "1" }).CHAT_TEXT, "Good morning");
   assertEquals(morningMessage.every, "day");
+});
+
+Deno.test("the morning round ends with one heal that does not keep healing", () => {
+  assertEquals(healAll.env?.({}).HEAL_ALL, "1");
+  assertEquals(healAll.name, "heal-all");
 });

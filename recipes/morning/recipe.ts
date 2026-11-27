@@ -1,5 +1,6 @@
 import { writeAlliance } from "../chat/recipe.ts";
-import { onlyInTheMorning, sequence, type Step, steps } from "../all/steps.ts";
+import { heal } from "../heal/recipe.ts";
+import { hour, onlyInTheMorning, sequence, type Step, steps } from "../all/steps.ts";
 
 export const morningMessage: Step = {
   name: "morning-message",
@@ -9,9 +10,16 @@ export const morningMessage: Step = {
   when: (env) => (env.MORNING_MESSAGE ?? "").trim().length > 0,
 };
 
+export const healAll: Step = {
+  name: "heal-all",
+  recipe: { description: "Presses Heal once for the injured troops.", run: heal.run },
+  every: 4 * hour,
+  env: (env) => ({ ...env, HEAL_ALL: "1" }),
+};
+
 export const morning = sequence(
-  "The morning round: your MORNING_MESSAGE in the alliance chat when one is set, intel, two Terror rallies with Diana and Fahd, all mail, the alliance chests and contributions, the Nomadic Merchant (the VIP XP item for gems only with --buy-vip), the free hero recruits, the pets, the store freebies, the VIP claims, Conquest, the Backpack, troop training, the island water, the online reward, the Mystic Trials, then the daily missions.",
-  [morningMessage, ...steps],
+  "The morning round: your MORNING_MESSAGE in the alliance chat when one is set, intel, two Terror rallies with Diana and Fahd, all mail, the alliance chests and contributions, the Nomadic Merchant (the VIP XP item for gems only with --buy-vip), the free hero recruits, the pets, the store freebies, the VIP claims, Conquest, the Backpack, troop training, the island water, the online reward, the Mystic Trials, the daily missions, then one press on Heal for the injured troops.",
+  [morningMessage, ...steps, healAll],
 );
 
 export const evening = sequence(

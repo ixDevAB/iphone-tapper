@@ -25,7 +25,13 @@ export const hour = 60 * minute;
 const dayMs = 24 * hour * 1000;
 const retry = 30 * minute;
 
-export type Step = { name: string; recipe: Recipe; every: number | "day"; env?: (env: Env) => Env };
+export type Step = {
+  name: string;
+  recipe: Recipe;
+  every: number | "day";
+  env?: (env: Env) => Env;
+  when?: (env: Env) => boolean;
+};
 
 const twoRallies = (env: Env) => ({
   ...env,
@@ -123,7 +129,7 @@ export const sequence = (description: string, chosen: Step[]): Recipe => {
         console.log(`${time()} could not get to the world map, stopping`);
         return;
       }
-      for (const step of chosen) {
+      for (const step of chosen.filter((s) => !s.when || s.when(settings.env))) {
         const until = doneToday(settings, step);
         if (until) {
           console.log(

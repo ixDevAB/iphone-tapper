@@ -1,4 +1,5 @@
 import { assertEquals } from "@std/assert";
+import { closest, crop, difference } from "../src/image.ts";
 import { latin } from "../src/ocr.ts";
 import { amountOf } from "../src/rewards.ts";
 import { center, exact, has, like } from "../src/screen.ts";
@@ -10,6 +11,8 @@ import { withSetting } from "./heal/calibrate.ts";
 import { alliesFrom, amountIn } from "./heal/window.ts";
 import { findMarkers, findPins } from "./intel/markers.ts";
 import { intelSummary } from "./intel/summary.ts";
+import { morningMessage } from "./morning/recipe.ts";
+import { huntAll } from "./pets/recipe.ts";
 import { gemConfirm, maySpend, priceIn, priceNear } from "./shop/confirm.ts";
 
 Deno.test("reward amounts understand separators and units", () => {
@@ -276,4 +279,40 @@ Deno.test("the plain chests and vip xp items are used, other chests are not", ()
     refusal("Trial Chest", "orange", "orange", { colours: ["grey"], items: [] }),
     "it is not on the list of things to use",
   );
+});
+
+Deno.test("the hunt all button is known when a letter is lost or mixed up", () => {
+  assertEquals(["Hunt All", "Hunt AIl", "Hunt AI", "ount Al", " Hunt Al "].map((t) => huntAll.test(t)), [
+    true,
+    true,
+    true,
+    true,
+    true,
+  ]);
+  assertEquals(["Hunt", "Claim All", "Ally Treasure", "Pet Adventure"].map((t) => huntAll.test(t)), [
+    false,
+    false,
+    false,
+    false,
+  ]);
+});
+
+Deno.test("a picture that sits a few pixels off is still found", () => {
+  const screen = picture(60, 60, [
+    { at: { x: 20, y: 18, width: 10, height: 10 }, rgb: [240, 150, 40] },
+    { at: { x: 23, y: 21, width: 4, height: 4 }, rgb: [30, 30, 30] },
+  ]);
+  const ref = crop(screen, { x: 20, y: 18, width: 10, height: 10 });
+  assertEquals(difference(screen, ref, 20, 18), 0);
+  assertEquals(difference(screen, ref, 20, 20) > 20, true);
+  assertEquals(closest(screen, ref, 20, 20, 4), 0);
+  assertEquals(closest(screen, ref, 40, 40, 4) > 20, true);
+});
+
+Deno.test("the morning message is only written when one is set", () => {
+  assertEquals(morningMessage.when?.({}), false);
+  assertEquals(morningMessage.when?.({ MORNING_MESSAGE: "  " }), false);
+  assertEquals(morningMessage.when?.({ MORNING_MESSAGE: "Good morning KON from Phelianbot!" }), true);
+  assertEquals(morningMessage.env?.({ MORNING_MESSAGE: "Good morning", CHAT_DRY: "1" }).CHAT_TEXT, "Good morning");
+  assertEquals(morningMessage.every, "day");
 });
